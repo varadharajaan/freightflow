@@ -1,0 +1,38 @@
+# =============================================================================
+# FreightFlow — Shared Configuration (All Services)
+# =============================================================================
+# This file is served by Spring Cloud Config Server and applies to every
+# FreightFlow microservice as the baseline configuration layer.
+# Service-specific overrides are in {application}.yml files.
+# =============================================================================
+
+spring:
+  # ---------------------------------------------------------------------------
+  # Virtual Threads (Java 21) — lightweight threads for I/O-bound workloads
+  # ---------------------------------------------------------------------------
+  threads:
+    virtual:
+      enabled: true
+
+# =============================================================================
+# Actuator — expose common endpoints across all services
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+# =============================================================================
+# FreightFlow Platform Settings
+# =============================================================================
+freightflow:
+  rate-limit:
+    enabled: true
+
+# =============================================================================
+# Logging
+# =============================================================================
+logging:
+  level:
+    com.freightflow: INFO

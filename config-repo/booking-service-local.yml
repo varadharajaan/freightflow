@@ -1,0 +1,30 @@
+# =============================================================================
+# FreightFlow Booking Service — Local Profile Configuration
+# =============================================================================
+# Overrides for local development (profile: local).
+# Activated when spring.profiles.active=local is set.
+# =============================================================================
+
+# =============================================================================
+# PostgreSQL Datasource — Local development database
+# =============================================================================
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/freightflow_booking
+    username: freightflow
+    password: freightflow
+
+# =============================================================================
+# FreightFlow Profiling — SQL query logging for development
+# =============================================================================
+freightflow:
+  profiling:
+    sql:
+      enabled: true
+
+# =============================================================================
+# Logging — verbose logging for local development
+# =============================================================================
+logging:
+  level:
+    com.freightflow: DEBUG

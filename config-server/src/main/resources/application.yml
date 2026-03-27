@@ -1,0 +1,70 @@
+# =============================================================================
+# FreightFlow Config Server — Spring Cloud Config Configuration
+# =============================================================================
+# Centralized configuration server backed by a Git repository.
+# Serves configuration to all FreightFlow microservices.
+# Endpoint: http://localhost:8888/{application}/{profile}
+# =============================================================================
+
+spring:
+  application:
+    name: config-server
+
+  # ---------------------------------------------------------------------------
+  # Spring Cloud Config Server — Git backend
+  # ---------------------------------------------------------------------------
+  cloud:
+    config:
+      server:
+        git:
+          # Local Git repository for development; replace with remote URL in production
+          uri: file://${user.dir}/config-repo
+          default-label: main
+          # Search for configuration in a subdirectory matching the application name
+          search-paths: '{application}'
+          clone-on-start: true
+
+  # ---------------------------------------------------------------------------
+  # Security — HTTP Basic credentials for config endpoints
+  # ---------------------------------------------------------------------------
+  security:
+    user:
+      name: config
+      password: config
+
+# =============================================================================
+# Server Configuration
+# =============================================================================
+server:
+  port: 8888
+
+# =============================================================================
+# Eureka Client — registers with Discovery Server
+# =============================================================================
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:eureka@localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# =============================================================================
+# Actuator — Health and Info endpoints
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# =============================================================================
+# Logging
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    com.freightflow: INFO
+    org.springframework.cloud.config: INFO

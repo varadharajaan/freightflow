@@ -1,0 +1,25 @@
+# =============================================================================
+# FreightFlow Booking Service — Service-Specific Configuration
+# =============================================================================
+# Overrides for the booking-service, served by Spring Cloud Config Server.
+# These settings apply across all profiles unless further overridden by
+# a profile-specific file (e.g., booking-service-local.yml).
+# =============================================================================
+
+# =============================================================================
+# Server Configuration
+# =============================================================================
+server:
+  port: 8081
+
+# =============================================================================
+# FreightFlow Booking Properties
+# =============================================================================
+freightflow:
+  booking:
+    # Minimum number of days before departure that a booking can be created
+    min-departure-days: 7
+    # Maximum number of containers allowed in a single booking
+    max-containers-per-booking: 50
+  kafka:
+    partitions: 12
