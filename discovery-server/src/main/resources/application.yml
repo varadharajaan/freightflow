@@ -1,0 +1,63 @@
+# =============================================================================
+# FreightFlow Discovery Server — Eureka Configuration
+# =============================================================================
+# Netflix Eureka Server for service registration and discovery.
+# Dashboard: http://localhost:8761 (protected by HTTP Basic auth)
+# =============================================================================
+
+spring:
+  application:
+    name: discovery-server
+
+  # ---------------------------------------------------------------------------
+  # Security — HTTP Basic credentials for the Eureka dashboard
+  # ---------------------------------------------------------------------------
+  security:
+    user:
+      name: eureka
+      password: eureka
+
+# =============================================================================
+# Server Configuration
+# =============================================================================
+server:
+  port: 8761
+
+# =============================================================================
+# Eureka Server Configuration
+# =============================================================================
+eureka:
+  client:
+    # Server does not register itself as a client
+    register-with-eureka: false
+    fetch-registry: false
+
+  server:
+    # Disable self-preservation for development — services are evicted promptly
+    # when they stop sending heartbeats. Enable in production to tolerate
+    # temporary network partitions.
+    enable-self-preservation: false
+    # Eviction interval: how often the server checks for expired instances (ms)
+    eviction-interval-timer-in-ms: 5000
+
+# =============================================================================
+# Actuator — Health and Info endpoints
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# =============================================================================
+# Logging
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    com.freightflow: INFO
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO

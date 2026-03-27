@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ==================== Parent ==================== -->
+    <parent>
+        <groupId>com.freightflow</groupId>
+        <artifactId>freightflow-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../freightflow-parent/pom.xml</relativePath>
+    </parent>
+
+    <!-- ==================== Module Coordinates ==================== -->
+    <artifactId>discovery-server</artifactId>
+    <name>FreightFlow :: Discovery Server</name>
+    <description>Netflix Eureka Server for service registration and discovery in the FreightFlow platform.</description>
+
+    <!-- ==================== Dependency Management (BOM Import) ==================== -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.freightflow</groupId>
+                <artifactId>freightflow-bom</artifactId>
+                <version>0.1.0-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- ==================== Dependencies ==================== -->
+    <dependencies>
+
+        <!-- ── Eureka Server ── -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+        </dependency>
+
+        <!-- ── Actuator — health checks and metrics ── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ── Security — dashboard protection via HTTP Basic ── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- ── Testing ── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- ==================== Build ==================== -->
+    <build>
+        <plugins>
+
+            <!-- ── Spring Boot Packaging ── -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
