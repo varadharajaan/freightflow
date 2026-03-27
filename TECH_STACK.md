@@ -28,10 +28,11 @@
 | **Spring Security** | 6.3+ | Authentication, authorization, OAuth2 resource server |
 | **Spring Kafka** | 3.2+ | Kafka producer/consumer abstraction |
 | **Spring Cloud Gateway** | 4.1+ | API Gateway (replaces Zuul) |
-| **Spring Cloud Config** | 4.1+ | Centralized configuration management |
-| **Spring Cloud Circuit Breaker** | 3.1+ | Circuit breaker abstraction |
-| **Spring Cloud OpenFeign** | 4.1+ | Declarative REST clients between services |
-| **Spring Cloud Sleuth/Micrometer Tracing** | Latest | Distributed tracing propagation |
+| **Spring Cloud Config Server** | 4.1+ | Centralized externalized configuration (Git-backed) |
+| **Spring Cloud Config Client** | 4.1+ | `@RefreshScope`, dynamic config reload |
+| **Spring Cloud Circuit Breaker** | 3.1+ | Circuit breaker abstraction (Resilience4j backend) |
+| **Spring HTTP Interface Clients** | 6.1+ | Declarative REST clients (`@HttpExchange`) - replaces OpenFeign |
+| **Micrometer Tracing** | 1.3+ | Distributed tracing propagation (replaces Sleuth) |
 | **Spring Cloud Stream** | 4.1+ | Message-driven microservice abstraction |
 | **Spring Cloud Contract** | 4.1+ | Consumer-driven contract testing |
 | **Spring Actuator** | 3.3+ | Health checks, metrics, info endpoints |
@@ -45,12 +46,27 @@
 
 ## NETFLIX OSS & SERVICE DISCOVERY
 
+> **Important**: As of 2026, only **Eureka** survives from Netflix OSS in Spring Cloud.
+> Ribbon, Hystrix, and Zuul are **deprecated/removed**. We use their modern replacements.
+
+| Netflix Original | Status | Modern Replacement Used | Why |
+|---|---|---|---|
+| **Eureka** | ACTIVE (v2.0.6) | **Eureka Server + Client** | Still best-in-class for Spring Cloud service discovery |
+| **Ribbon** | DEPRECATED | **Spring Cloud LoadBalancer** | Netflix in maintenance mode since 2018 |
+| **Hystrix** | DEPRECATED | **Resilience4j** (via Spring Cloud Circuit Breaker) | No longer actively developed |
+| **Zuul** | REMOVED | **Spring Cloud Gateway** | Zuul 1 was blocking; Gateway is reactive |
+| **OpenFeign** | FEATURE-COMPLETE | **Spring HTTP Interface Clients** (`@HttpExchange`) | Spring recommends migration to native `@HttpExchange` |
+
+### What We Actually Use
 | Technology | Purpose | Notes |
 |---|---|---|
 | **Eureka Server** | Service registry & discovery | Netflix OSS - services register themselves |
 | **Eureka Client** | Service registration | Embedded in each microservice |
-| **Spring Cloud LoadBalancer** | Client-side load balancing | Replaces Netflix Ribbon (deprecated) |
-| **Spring Cloud OpenFeign** | Declarative HTTP clients | Replaces Netflix Feign |
+| **Spring Cloud LoadBalancer** | Client-side load balancing | Round-robin, weighted, zone-based, sticky sessions |
+| **Spring HTTP Interface Clients** | Declarative HTTP clients (`@HttpExchange`) | Built into Spring Framework 6+, no extra dependency |
+| **Spring Cloud Gateway** | API Gateway (reactive + MVC modes) | Route predicates, filters, rate limiting |
+| **Spring Cloud Config Server** | Centralized externalized configuration | Git-backed, encryption support, refresh scope |
+| **Spring Cloud Config Client** | Config consumption | `@RefreshScope`, dynamic property reload |
 
 ---
 
@@ -388,23 +404,78 @@ Argo Rollouts -> Canary deployment (10% -> 50% -> 100%) -> Production
 
 ---
 
+## COOL UTILITIES & LIBRARIES
+
+> Beyond the standard stack - these set a Principal Engineer apart from Senior Engineers.
+
+### Developer Productivity
+| Technology | Purpose | Why It's Cool |
+|---|---|---|
+| **MapStruct** | Compile-time bean mapping (DTO <-> Entity) | Zero reflection, type-safe, 10x faster than ModelMapper |
+| **Lombok** (selective) | Boilerplate reduction (`@Slf4j`, `@Builder`) | Used sparingly alongside Java 21 Records |
+| **jOOQ** | Type-safe SQL builder | Complex queries that JPA/JPQL can't express cleanly |
+| **Caffeine** | In-process caching (L1 before Redis L2) | Highest performance JVM cache, near-optimal hit rates |
+| **Guava** | Google core utilities | `RateLimiter`, `Cache`, `Preconditions`, immutable collections |
+| **Apache Commons Lang3** | String/Object/Reflection utilities | `StringUtils`, `ObjectUtils`, `ToStringBuilder` |
+| **Jackson Databind** | JSON serialization/deserialization | Custom serializers, mixins, polymorphic handling |
+| **Vavr** | Functional programming for Java | `Either<L,R>`, `Try<T>`, pattern matching, persistent collections |
+
+### Code Generation & Validation
+| Technology | Purpose | Why It's Cool |
+|---|---|---|
+| **Immutables** | Compile-time immutable value objects | `@Value.Immutable` generates builders, equals, hashCode |
+| **Jakarta Bean Validation 3.0** | Declarative input validation | Custom validators, cross-field validation, groups |
+| **Hibernate Validator** | Bean Validation reference implementation | Programmatic + annotation-based validation |
+| **Springdoc OpenAPI** | Auto-generate OpenAPI from code | Swagger UI + contract-first with annotations |
+
+### Performance & Monitoring
+| Technology | Purpose | Why It's Cool |
+|---|---|---|
+| **JMH** (Java Microbenchmark Harness) | Micro-benchmarking framework | Prove performance claims with data, not guesses |
+| **Async Profiler** | Low-overhead JVM profiler | CPU, heap, lock profiling in production |
+| **Spring Boot DevTools** | Hot reload in development | LiveReload, auto-restart, H2 console |
+| **Actuator Custom Endpoints** | Custom health/info/metrics endpoints | Business health indicators |
+
+### Distributed Systems Utilities
+| Technology | Purpose | Why It's Cool |
+|---|---|---|
+| **Spring Modulith** | Modular monolith support | Logical modules with enforced boundaries, easy to split later |
+| **Spring Cloud Function** | Write once, deploy anywhere (Lambda, Azure Functions, K8s) | Serverless portability |
+| **Spring Cloud Vault** | HashiCorp Vault integration | Dynamic secrets, secret rotation |
+| **Spring Cloud Kubernetes** | K8s-native config & discovery | ConfigMaps/Secrets as Spring properties |
+| **Spring Statemachine** | State machine framework | Booking lifecycle, order workflows |
+| **Bucket4j** | Rate limiting with distributed support | Token bucket algorithm, Redis/Hazelcast backends |
+| **Shedlock** | Distributed scheduled task locking | Prevents duplicate cron execution across instances |
+| **Redisson** | Advanced Redis client | Distributed locks, semaphores, queues, bloom filters |
+
+### Documentation & Diagrams
+| Technology | Purpose | Why It's Cool |
+|---|---|---|
+| **Asciidoctor** | Technical documentation | ADRs, runbooks with includes, diagrams |
+| **PlantUML** | Diagrams as code | Sequence, class, component diagrams in version control |
+| **Spring REST Docs** | Test-driven API documentation | API docs generated from passing tests, always accurate |
+
+---
+
 ## TOTAL COUNT
 
 | Category | Count |
 |---|---|
-| **Spring Technologies** | 20+ |
+| **Spring Technologies** | 22+ |
+| **Netflix OSS (Active + Replacements)** | 7 |
 | **Data Technologies** | 12+ |
-| **Messaging Technologies** | 8+ |
+| **Messaging Technologies** | 9+ |
 | **Security Technologies** | 11+ |
 | **Container & Orchestration** | 18+ |
 | **Service Mesh** | 10+ |
-| **CI/CD & GitOps** | 14+ |
+| **CI/CD & GitOps** | 15+ |
 | **AWS Services** | 16+ |
 | **Observability** | 14+ |
 | **Testing** | 16+ |
+| **Cool Utilities & Libraries** | 25+ |
 | **Design Patterns** | 25+ |
 | **Architecture Styles** | 11+ |
-| **TOTAL UNIQUE TECHNOLOGIES** | **120+** |
+| **TOTAL UNIQUE TECHNOLOGIES** | **150+** |
 
 ---
 
