@@ -1,14 +1,31 @@
 # FreightFlow - Container Shipping & Logistics Platform
 
-[![Build](https://github.com/YOUR_USERNAME/freightflow/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/freightflow/actions)
-[![Quality Gate](https://img.shields.io/badge/quality%20gate-passed-brightgreen)](.)
-[![Coverage](https://img.shields.io/badge/coverage-%3E80%25-brightgreen)](.)
+[![Build](https://github.com/varadharajaan/freightflow/actions/workflows/ci.yml/badge.svg)](https://github.com/varadharajaan/freightflow/actions)
 [![Java](https://img.shields.io/badge/Java-21-orange)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-green)](https://spring.io/projects/spring-boot)
+[![Kafka](https://img.shields.io/badge/Kafka-3.7-red)](https://kafka.apache.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)](https://www.postgresql.org/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-1.28-326CE5)](https://kubernetes.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-> A production-grade, microservices-based container shipping management platform demonstrating
-> enterprise Java architecture, distributed systems patterns, and DevOps best practices.
+> A production-grade, microservices-based container shipping management platform
+> built with Java 21, Spring Boot 3, Apache Kafka, and deployed on Kubernetes
+> with Istio service mesh and ArgoCD GitOps.
+
+---
+
+## What is FreightFlow?
+
+FreightFlow is a **distributed platform for managing container shipping operations** - from booking cargo shipments across global trade routes, to real-time container tracking, invoicing, and vessel schedule management.
+
+It demonstrates how to build **enterprise-grade microservices** with:
+- Event-driven architecture using **Apache Kafka**
+- **CQRS and Event Sourcing** for complex domain workflows
+- **Saga pattern** for distributed transactions across services
+- **Java 21** features (Virtual Threads, Records, Sealed Classes, Pattern Matching)
+- Full **observability** (metrics, logging, distributed tracing)
+- **Kubernetes** deployment with **Istio** service mesh
+- **GitOps** continuous delivery with **ArgoCD**
 
 ---
 
@@ -16,7 +33,7 @@
 
 ```
                                     +------------------+
-                                    |   Load Balancer   |
+                                    |   ALB / Ingress   |
                                     +--------+---------+
                                              |
                                     +--------+---------+
@@ -24,20 +41,41 @@
                                     | (Spring Cloud GW) |
                                     +--------+---------+
                                              |
-                    +------------------------+------------------------+
-                    |                        |                        |
-           +--------+--------+    +---------+--------+    +---------+--------+
-           | Booking Service  |    | Tracking Service  |    | Billing Service  |
-           | (CQRS + ES)     |    | (Kafka Streams)   |    | (Saga Pattern)   |
-           +--------+--------+    +---------+--------+    +---------+--------+
-                    |                        |                        |
-                    +----------+-------------+----------+-------------+
-                               |                        |
-                    +----------+----------+   +---------+--------+
-                    |    Apache Kafka      |   |   PostgreSQL     |
-                    |  (Event Backbone)    |   | (Per-service DB) |
-                    +---------------------+   +------------------+
+          +---------------+------------------+------------------+
+          |               |                  |                  |
+  +-------+------+ +------+-------+ +-------+------+ +--------+--------+
+  |  Booking     | |  Tracking    | |  Billing     | | Vessel Schedule  |
+  |  Service     | |  Service     | |  Service     | | Service          |
+  |  (CQRS+ES)  | | (Kafka       | |  (Saga       | | (Graph+Cache)    |
+  |              | |  Streams)    | |   Pattern)   | |                  |
+  +---------+----+ +------+-------+ +------+-------+ +--------+--------+
+            |             |                |                   |
+  +---------+----+ +------+-------+        |                   |
+  |  Customer    | | Notification |        |                   |
+  |  Service     | | Service      |        |                   |
+  |  (RBAC)      | | (Async)      |        |                   |
+  +---------+----+ +------+-------+        |                   |
+            |             |                |                   |
+    +-------+-------------+----------------+-------------------+
+    |                          |                               |
+    |    +------------------+  |  +-----------------+          |
+    |    |  Apache Kafka    |  |  |  Redis          |          |
+    |    |  (Event Backbone)|  |  |  (L2 Cache)     |          |
+    |    +------------------+  |  +-----------------+          |
+    |                          |                               |
+    |    +------------------+  |  +-----------------+          |
+    |    |  PostgreSQL      |  |  |  Keycloak       |          |
+    |    |  (Per-service DB)|  |  |  (OAuth 2.0)    |          |
+    |    +------------------+  |  +-----------------+          |
+    +-------+------------------+-------------------------------+
+            |
+    +-------+----------+    +-----------+    +----------+
+    | Eureka           |    | Config    |    | Istio    |
+    | (Discovery)      |    | Server    |    | (Mesh)   |
+    +------------------+    +-----------+    +----------+
 ```
+
+---
 
 ## Modules
 
@@ -46,9 +84,9 @@
 | `freightflow-bom` | Dependency version management | BOM pattern |
 | `freightflow-parent` | Build plugin management | Parent POM |
 | `commons-domain` | Shared value objects & domain primitives | DDD Building Blocks |
-| `commons-events` | Event contracts & serialization | Schema Registry |
+| `commons-events` | Event contracts & Avro schemas | Schema Registry |
 | `commons-security` | JWT, OAuth2 utilities | Security patterns |
-| `commons-observability` | Structured logging, metrics, tracing | Observability |
+| `commons-observability` | Structured logging, metrics, tracing | Three Pillars |
 | `commons-testing` | Test fixtures & custom assertions | Test utilities |
 | `booking-service` | Booking lifecycle management | CQRS, Event Sourcing |
 | `tracking-service` | Real-time container tracking | Kafka Streams, WebSocket |
@@ -57,10 +95,14 @@
 | `customer-service` | Customer & contract management | RBAC, Multi-tenancy |
 | `notification-service` | Multi-channel notifications | Observer, Async |
 | `api-gateway` | Request routing & rate limiting | Gateway, Circuit Breaker |
+| `config-server` | Centralized configuration | Spring Cloud Config |
+| `discovery-server` | Service registry | Eureka |
+
+---
 
 ## Tech Stack
 
-> For the **complete 120+ technology breakdown**, see [`TECH_STACK.md`](TECH_STACK.md)
+> Full 150+ technology breakdown: [`TECH_STACK.md`](TECH_STACK.md)
 
 | Layer | Technologies |
 |---|---|
@@ -70,32 +112,35 @@
 | **Resilience** | Resilience4j (Circuit Breaker, Bulkhead, Retry, Rate Limiter) |
 | **API** | REST (OpenAPI 3.1), gRPC, GraphQL, WebSocket, SSE, HATEOAS |
 | **Data** | PostgreSQL 16, Spring Data JPA, Hibernate 6.4, HikariCP, Flyway, QueryDSL |
-| **Caching** | Redis 7, Spring Cache, Caffeine, Hibernate L2 Cache |
-| **Messaging** | Apache Kafka 3.7, Kafka Streams, Schema Registry, Debezium (CDC) |
+| **Caching** | Caffeine (L1) + Redis 7 (L2), Spring Cache, Hibernate L2 Cache |
+| **Messaging** | Apache Kafka 3.7, Kafka Streams, Schema Registry (Avro), Debezium CDC |
 | **Security** | Keycloak (OAuth 2.0/OIDC), Spring Security 6, JWT, RBAC |
-| **Containers** | Docker (multi-stage, distroless), Jib |
+| **Containers** | Docker (multi-stage, distroless), Jib (Maven plugin) |
 | **Orchestration** | Kubernetes, Helm v3, Kustomize, HPA, PDB, Network Policies |
 | **Service Mesh** | Istio, Envoy Proxy, mTLS, Traffic Splitting, Kiali |
 | **CI/CD** | GitHub Actions, SonarQube, Trivy, JaCoCo, Checkstyle, SpotBugs, PIT |
-| **GitOps** | ArgoCD, ArgoCD ApplicationSet, Argo Rollouts (Canary/Blue-Green) |
+| **GitOps** | ArgoCD, Argo Rollouts (Canary/Blue-Green) |
 | **Cloud (AWS)** | EKS, RDS, MSK, ElastiCache, S3, ALB, Route 53, WAF, Secrets Manager |
 | **IaC** | Terraform, Terragrunt, tfsec, Checkov |
-| **Observability** | Micrometer, Prometheus, Grafana, OpenTelemetry, Jaeger, ELK Stack, Fluent Bit |
-| **Testing** | JUnit 5, Mockito, Testcontainers, ArchUnit, PIT, Gatling, WireMock, REST Assured, Spring Cloud Contract |
+| **Observability** | Micrometer, Prometheus, Grafana, OpenTelemetry, Jaeger, ELK Stack |
+| **Testing** | JUnit 5, Mockito, Testcontainers, ArchUnit, PIT, Gatling, WireMock |
+| **Utilities** | MapStruct, Vavr, Caffeine, Bucket4j, Shedlock, Redisson |
 
-## Prerequisites
+---
 
-- Java 21 (GraalVM or Temurin)
-- Maven 3.9+ (or use included `mvnw`)
+## Getting Started
+
+### Prerequisites
+
+- Java 21 ([Adoptium Temurin](https://adoptium.net/) or [GraalVM](https://www.graalvm.org/))
 - Docker & Docker Compose
-- PostgreSQL 16 (via Docker)
-- Apache Kafka (via Docker)
+- Maven 3.9+ (or use included `mvnw`)
 
-## Quick Start
+### Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/freightflow.git
+# Clone
+git clone https://github.com/varadharajaan/freightflow.git
 cd freightflow
 
 # Start infrastructure (PostgreSQL, Kafka, Redis, Keycloak)
@@ -104,67 +149,108 @@ docker-compose -f infrastructure/docker/docker-compose.yml up -d
 # Build all modules
 ./mvnw clean install
 
-# Run a specific service
-./mvnw -pl booking-service spring-boot:run
+# Run booking service (with Virtual Threads)
+./mvnw -pl booking-service spring-boot:run \
+  -Dspring-boot.run.profiles=local \
+  -Dspring-boot.run.jvmArguments="-Dspring.threads.virtual.enabled=true"
 
-# Run all tests
+# Run tests
 ./mvnw verify
 
-# Run with integration tests (requires Docker)
+# Run integration tests (uses Testcontainers)
 ./mvnw verify -P integration-tests
 ```
+
+> For detailed setup instructions, see [docs/setup/WORKSPACE_SETUP.md](docs/setup/WORKSPACE_SETUP.md)
+
+---
+
+## Documentation
+
+| Document | Description |
+|---|---|
+| [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) | C4 model, container diagram, component breakdown |
+| [Event Flow](docs/architecture/EVENT_FLOW.md) | Kafka topics, event sequences, outbox pattern |
+| [API Design Guide](docs/api/API_DESIGN_GUIDE.md) | REST conventions, error handling, pagination |
+| [Caching Strategy](docs/caching/CACHING_STRATEGY.md) | L1/L2/L3 caching, stampede prevention |
+| [Workspace Setup](docs/setup/WORKSPACE_SETUP.md) | Development environment setup |
+| [Tech Stack](TECH_STACK.md) | Complete 150+ technology breakdown |
+| [Contributing](CONTRIBUTING.md) | Coding standards, PR guidelines |
+| [ADRs](docs/adr/) | Architecture Decision Records |
+
+---
+
+## Architecture Decisions
+
+All significant decisions are documented as ADRs in [`docs/adr/`](docs/adr/).
+
+| ADR | Decision |
+|---|---|
+| [ADR-001](docs/adr/ADR-001-cqrs-event-sourcing-booking.md) | CQRS with Event Sourcing for Booking Service |
+| ADR-002 | Database-per-service with PostgreSQL |
+| ADR-003 | Apache Kafka as the event backbone |
+| ADR-004 | Saga pattern (orchestration) for distributed transactions |
+| ADR-005 | Virtual Threads for I/O-bound operations |
+| ADR-006 | Contract-first API design with OpenAPI 3.1 |
+| ADR-007 | Multi-level caching strategy (Caffeine + Redis) |
+| ADR-008 | Istio service mesh for mTLS and traffic management |
+| ADR-009 | ArgoCD GitOps for continuous delivery |
+| ADR-010 | Outbox pattern with Debezium CDC for reliable messaging |
+
+---
+
+## Design Patterns Implemented
+
+| Category | Patterns |
+|---|---|
+| **Creational** | Factory Method, Abstract Factory, Builder, Singleton |
+| **Structural** | Adapter, Decorator, Facade, Proxy, Composite |
+| **Behavioral** | Strategy, Observer, Command, Chain of Responsibility, Template Method, State |
+| **Enterprise** | CQRS, Event Sourcing, Saga, Outbox, Repository, Specification |
+| **Resilience** | Circuit Breaker, Bulkhead, Retry, Rate Limiter, Timeout |
+| **Integration** | Anti-Corruption Layer, Canonical Data Model, Dead Letter Channel |
+
+---
 
 ## Project Structure
 
 ```
 freightflow/
-|-- freightflow-bom/
-|-- freightflow-parent/
+|-- freightflow-bom/                    # Bill of Materials
+|-- freightflow-parent/                 # Parent POM
 |-- freightflow-commons/
-|   |-- commons-domain/
-|   |-- commons-events/
-|   |-- commons-security/
-|   |-- commons-observability/
-|   |-- commons-testing/
-|-- booking-service/
-|-- tracking-service/
-|-- billing-service/
-|-- vessel-schedule-service/
-|-- customer-service/
-|-- notification-service/
-|-- api-gateway/
+|   |-- commons-domain/                 # Domain primitives (Money, Weight, ContainerId)
+|   |-- commons-events/                 # Avro event schemas
+|   |-- commons-security/              # JWT, OAuth2 utilities
+|   |-- commons-observability/          # Logging, metrics, tracing
+|   |-- commons-testing/               # Test fixtures, Testcontainer configs
+|-- booking-service/                    # CQRS + Event Sourcing
+|-- tracking-service/                   # Kafka Streams + WebSocket
+|-- billing-service/                    # Saga orchestration
+|-- vessel-schedule-service/            # Route optimization
+|-- customer-service/                   # RBAC + multi-tenancy
+|-- notification-service/              # Async notifications
+|-- api-gateway/                       # Spring Cloud Gateway
+|-- config-server/                     # Spring Cloud Config
+|-- discovery-server/                  # Eureka Server
 |-- infrastructure/
-|   |-- docker/
-|   |-- kubernetes/
-|   |-- terraform/
-|   |-- monitoring/
+|   |-- docker/                        # Dockerfiles, docker-compose.yml
+|   |-- kubernetes/                    # K8s manifests, Helm charts
+|   |-- terraform/                     # AWS EKS, RDS, MSK, ElastiCache
+|   |-- monitoring/                    # Prometheus rules, Grafana dashboards
 |-- docs/
-|   |-- architecture/
-|   |-- api/
-|   |-- adr/
-|   |-- runbooks/
+|   |-- architecture/                  # C4 diagrams, event flows
+|   |-- api/                           # OpenAPI specs, API guide
+|   |-- adr/                           # Architecture Decision Records
+|   |-- caching/                       # Caching strategy
+|   |-- setup/                         # Workspace setup
+|   |-- runbooks/                      # Operational runbooks
 |-- .github/
-|   |-- workflows/
+|   |-- workflows/                     # CI/CD pipelines
 |   |-- PULL_REQUEST_TEMPLATE.md
-|-- pom.xml
 ```
 
-## Architecture Decisions
-
-All significant architectural decisions are documented as ADRs in [`docs/adr/`](docs/adr/).
-
-| ADR | Decision |
-|---|---|
-| ADR-001 | Use CQRS with Event Sourcing for Booking Service |
-| ADR-002 | Database-per-service with PostgreSQL |
-| ADR-003 | Apache Kafka as the event backbone |
-| ADR-004 | Saga pattern (orchestration) for cross-service transactions |
-| ADR-005 | Virtual Threads for I/O-bound operations |
-| ADR-006 | Contract-first API design with OpenAPI 3.1 |
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, PR guidelines, and development workflow.
+---
 
 ## License
 
