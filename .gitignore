@@ -63,8 +63,8 @@ docker-compose.override.yml
 # Logs & Application Output
 logs/
 log/
-output/
-out/
+/output/
+/out/
 *.log
 *.log.*
 *.out
