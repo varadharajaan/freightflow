@@ -88,15 +88,16 @@ It demonstrates how to build **enterprise-grade microservices** with:
 | `commons-security` | JWT, OAuth2 utilities | Security patterns |
 | `commons-observability` | Structured logging, metrics, tracing | Three Pillars |
 | `commons-testing` | Test fixtures & custom assertions | Test utilities |
+| `commons-exception` | Global exception handling, RFC 7807 Problem Details | Sealed exception hierarchy |
 | `booking-service` | Booking lifecycle management | CQRS, Event Sourcing |
-| `tracking-service` | Real-time container tracking | Kafka Streams, WebSocket |
-| `billing-service` | Invoicing & payment processing | Saga, Outbox |
-| `vessel-schedule-service` | Vessel routes & schedules | Graph algorithms, Caching |
-| `customer-service` | Customer & contract management | RBAC, Multi-tenancy |
-| `notification-service` | Multi-channel notifications | Observer, Async |
-| `api-gateway` | Request routing & rate limiting | Gateway, Circuit Breaker |
-| `config-server` | Centralized configuration | Spring Cloud Config |
-| `discovery-server` | Service registry | Eureka |
+| `tracking-service` | Real-time container tracking (Planned) | Kafka Streams, WebSocket |
+| `billing-service` | Invoicing & payment processing (Planned) | Saga, Outbox |
+| `vessel-schedule-service` | Vessel routes & schedules (Planned) | Graph algorithms, Caching |
+| `customer-service` | Customer & contract management (Planned) | RBAC, Multi-tenancy |
+| `notification-service` | Multi-channel notifications (Planned) | Observer, Async |
+| `api-gateway` | Request routing & rate limiting (Planned) | Gateway, Circuit Breaker |
+| `config-server` | Centralized configuration (Planned) | Spring Cloud Config |
+| `discovery-server` | Service registry (Planned) | Eureka |
 
 ---
 
@@ -224,15 +225,16 @@ freightflow/
 |   |-- commons-security/              # JWT, OAuth2 utilities
 |   |-- commons-observability/          # Logging, metrics, tracing
 |   |-- commons-testing/               # Test fixtures, Testcontainer configs
+|   |-- commons-exception/             # Global exception handling, RFC 7807
 |-- booking-service/                    # CQRS + Event Sourcing
-|-- tracking-service/                   # Kafka Streams + WebSocket
-|-- billing-service/                    # Saga orchestration
-|-- vessel-schedule-service/            # Route optimization
-|-- customer-service/                   # RBAC + multi-tenancy
-|-- notification-service/              # Async notifications
-|-- api-gateway/                       # Spring Cloud Gateway
-|-- config-server/                     # Spring Cloud Config
-|-- discovery-server/                  # Eureka Server
+|-- tracking-service/                   # Kafka Streams + WebSocket  # (planned)
+|-- billing-service/                    # Saga orchestration  # (planned)
+|-- vessel-schedule-service/            # Route optimization  # (planned)
+|-- customer-service/                   # RBAC + multi-tenancy  # (planned)
+|-- notification-service/              # Async notifications  # (planned)
+|-- api-gateway/                       # Spring Cloud Gateway  # (planned)
+|-- config-server/                     # Spring Cloud Config  # (planned)
+|-- discovery-server/                  # Eureka Server  # (planned)
 |-- infrastructure/
 |   |-- docker/                        # Dockerfiles, docker-compose.yml
 |   |-- kubernetes/                    # K8s manifests, Helm charts

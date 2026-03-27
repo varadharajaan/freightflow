@@ -138,6 +138,8 @@ Environment variables: SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/fr
 
 ## Port Allocation
 
+> **Note:** Currently only `booking-service` (port 8081) is runnable. Other service ports are reserved for future implementation.
+
 | Service | Port | Debug Port |
 |---|---|---|
 | API Gateway | 8080 | 5080 |
@@ -167,6 +169,8 @@ Environment variables: SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/fr
 | Jaeger UI | 16686 |
 | Kiali (Istio) | 20001 |
 | Eureka Dashboard | 8761 |
+
+> **Note:** Currently only `booking-service` (port 8081) is runnable. Other service ports are reserved for future implementation.
 
 ---
 
@@ -224,6 +228,9 @@ psql -h localhost -p 5432 -U freightflow -d freightflow_booking
 ```
 
 ### Run Flyway Migrations
+
+> **Note:** The booking-service currently has 3 migrations: V1 (bookings table), V2 (audit columns), V3 (event store + projections).
+
 ```bash
 # Migrations run automatically on service startup
 # To run manually:
@@ -294,6 +301,5 @@ rm -rf ~/.m2/repository/com/freightflow
 # Build with debug output
 ./mvnw clean install -X
 
-# Skip problematic modules
-./mvnw clean install -pl '!notification-service'
+# Skip a specific module if needed: ./mvnw clean install -pl '!module-name'
 ```

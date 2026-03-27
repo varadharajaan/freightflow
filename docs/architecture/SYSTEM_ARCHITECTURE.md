@@ -151,14 +151,15 @@ This document describes the FreightFlow architecture using the C4 model
 | Component | Responsibility |
 |---|---|
 | **REST Controller** | HTTP API for booking CRUD, validation, response mapping |
-| **Kafka Consumer** | Listens for external events (payment confirmed, vessel departed) |
+| **Kafka Consumer (Planned)** | Will listen for external events (payment confirmed, vessel departed) |
 | **Command Handlers** | Process write operations (CreateBooking, ConfirmBooking, CancelBooking) |
 | **Query Handlers** | Process read operations (GetBooking, SearchBookings, GetBookingHistory) |
 | **Booking Aggregate** | Domain logic, business rules, invariant enforcement |
 | **Domain Events** | BookingCreated, BookingConfirmed, BookingCancelled, CargoLoaded |
 | **Event Store** | Persists domain events to PostgreSQL with JSONB payloads |
 | **Read Model** | Materialized projections optimized for queries |
-| **Kafka Producer** | Publishes domain events for downstream services |
+| **Projection Updater** | Materializes domain events into read model projections (CQRS bridge) via @EventListener |
+| **Event Publisher** | Publishes domain events (currently via Spring ApplicationEvent, Kafka planned) |
 
 ---
 
@@ -219,6 +220,25 @@ CREATE TABLE booking_events (
     created_by      VARCHAR(100),
     UNIQUE (aggregate_id, version)
 ) PARTITION BY RANGE (created_at);
+```
+
+### Read Model Projection Schema
+```sql
+CREATE TABLE booking_projections (
+    booking_id               UUID            PRIMARY KEY,
+    customer_id              UUID            NOT NULL,
+    status                   VARCHAR(20)     NOT NULL,
+    origin_port              VARCHAR(10)     NOT NULL,
+    destination_port         VARCHAR(10)     NOT NULL,
+    container_type           VARCHAR(20)     NOT NULL,
+    container_count          INTEGER         NOT NULL,
+    commodity_description    VARCHAR(500),
+    voyage_id                UUID,
+    last_event_version       BIGINT          NOT NULL DEFAULT 0,
+    created_at               TIMESTAMPTZ     NOT NULL,
+    updated_at               TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    sequence_number          BIGSERIAL       NOT NULL
+);
 ```
 
 ---

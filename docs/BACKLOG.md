@@ -11,9 +11,9 @@
 | # | Feature | Current State | Target Topic | GitHub Issue |
 |---|---|---|---|---|
 | 1 | **Quote Generation Service** | Not started | New service needed | TBD |
-| 2 | **JPA Persistence Adapter** | Port interface exists, no JPA entity/repository yet | T4 (JPA Advanced) | #3 |
-| 3 | **Kafka Event Publisher** | Using Spring ApplicationEvent (local only) | T5 (Kafka) | #7 |
-| 4 | **Booking History / Event Store** | Events collected but not persisted to event store | T3 (CQRS + ES) | #6 |
+| 2 | **JPA Persistence Adapter** | ✅ Completed (Issue #3 closed) — Fully implemented: BookingJpaEntity, JpaBookingPersistenceAdapter, BookingEntityMapper, JPA auditing, Flyway V1+V2 | T4 (JPA Advanced) | ✅ Closed |
+| 3 | **Kafka Event Publisher** | Using Spring ApplicationEvent (local). Events now drive CQRS projection updater. Kafka integration pending for cross-service communication. | T5 (Kafka) | #7 |
+| 4 | **Booking History / Event Store** | ✅ Completed (Issue #6 closed) — Fully implemented: EventStore port, JpaEventStoreAdapter, BookingProjectionUpdater, BookingQueryHandler.getBookingHistory(), Flyway V3 | T3 (CQRS + ES) | ✅ Closed |
 | 5 | **HATEOAS Links** | Not on responses yet | T8 (API Gateway) | #12 |
 | 6 | **Pagination** | List endpoint returns all bookings (no cursor) | T25 (API Design) | #14 |
 | 7 | **Authentication/Authorization** | No security on endpoints yet | T9 (Security) | #15 |
@@ -31,7 +31,7 @@
 | # | Location | What's Hardcoded | Replacement Needed |
 |---|---|---|---|
 | 1 | `application-local.yml` | DB credentials (freightflow/freightflow) | Vault/Secrets Manager in prod |
-| 2 | `BookingServiceConfig.java` | Empty config class (placeholder) | Add ObjectMapper, Kafka, Resilience4j beans |
+| 2 | `BookingServiceConfig.java` | Basic config with JPA auditing. Kafka, Resilience4j, ObjectMapper beans still needed. | Add ObjectMapper, Kafka, Resilience4j beans |
 | 3 | `GlobalExceptionHandler` | `PROBLEM_BASE_URI` hardcoded | Move to config property |
 | 4 | `Booking.create()` | No departure date min-days validation | Should be configurable (e.g., 7 days minimum) |
 | 5 | `SpringEventBookingPublisher` | Uses Spring events (in-process only) | Replace with Kafka producer in T5 |

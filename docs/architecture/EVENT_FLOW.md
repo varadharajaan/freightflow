@@ -44,6 +44,37 @@ Customer                API Gateway           Booking Service        Billing Ser
 
 ---
 
+## Current Implementation (In-Process Event Flow)
+
+> **Note:** The target architecture uses Apache Kafka for inter-service events.
+> The current implementation uses Spring ApplicationEvent for in-process event flow
+> within the booking-service. Kafka integration is tracked in Issue #7.
+
+### Current Event Flow (Single Service)
+
+```
+BookingCommandHandler
+    |
+    |-- 1. Execute domain logic on Booking aggregate
+    |-- 2. Persist aggregate state (BookingRepository → PostgreSQL bookings table)
+    |-- 3. Append events to Event Store (EventStore → PostgreSQL booking_events table)
+    |-- 4. Publish events via Spring ApplicationEventPublisher
+    |
+    +--→ BookingProjectionUpdater (@EventListener)
+         |
+         |-- Pattern match on sealed BookingEvent:
+         |   - BookingCreated  → INSERT into booking_projections
+         |   - BookingConfirmed → UPDATE status + voyage_id
+         |   - BookingCancelled → UPDATE status + cancellation_reason
+         |-- Idempotent: checks last_event_version before applying
+         |
+         +--→ booking_projections table (CQRS read model)
+                  |
+                  +--→ BookingQueryHandler reads from here
+```
+
+---
+
 ## Booking Cancellation Flow (Compensating Transaction)
 
 ```
@@ -129,6 +160,8 @@ notification-service-group -> booking.events, billing.events, tracking.events
 ---
 
 ## Outbox Pattern (Transactional Messaging)
+
+> **Status:** Planned — not yet implemented. See Issue #7 (Kafka) and ADR-010 (Outbox Pattern).
 
 To ensure exactly-once delivery between the database and Kafka:
 
