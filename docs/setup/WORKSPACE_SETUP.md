@@ -78,7 +78,7 @@ docker-compose -f infrastructure/docker/docker-compose.yml ps
 | Prometheus | http://localhost:9090 | - |
 | Jaeger UI | http://localhost:16686 | - |
 | pgAdmin | http://localhost:5050 | admin@freightflow.com / admin |
-| Redis Commander | http://localhost:8085 | - |
+| Redis Commander | http://localhost:8087 | - |
 
 ---
 
@@ -151,9 +151,22 @@ Environment variables: SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/fr
 | Eureka Server | 8761 | 5761 |
 | PostgreSQL | 5432 | - |
 | Kafka | 9092 | - |
-| Schema Registry | 8081 | - |
+| Schema Registry | 8091 | - |
 | Redis | 6379 | - |
 | Keycloak | 8180 | - |
+
+### Infrastructure UIs (Development Only)
+| UI Tool | Port |
+|---|---|
+| Swagger UI (per service) | Same as service port + `/swagger-ui.html` |
+| Kafka UI | 8090 |
+| pgAdmin | 5050 |
+| Redis Commander | 8087 |
+| Grafana | 3000 |
+| Prometheus | 9090 |
+| Jaeger UI | 16686 |
+| Kiali (Istio) | 20001 |
+| Eureka Dashboard | 8761 |
 
 ---
 
