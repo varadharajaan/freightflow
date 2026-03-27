@@ -13,32 +13,32 @@ ensuring loose coupling and independent deployability.
 ```
 Customer                API Gateway           Booking Service        Billing Service       Notification Service
    |                        |                        |                      |                       |
-   |-- POST /bookings ---->|                        |                      |                       |
-   |                        |-- CreateBookingCmd -->|                       |                       |
-   |                        |                       |                      |                       |
-   |                        |                       |-- [Validate] ------->|                       |
-   |                        |                       |-- [Persist Event] -->|                       |
-   |                        |                       |                      |                       |
-   |                        |<-- 202 Accepted ------|                      |                       |
-   |<-- 202 Accepted -------|                       |                      |                       |
-   |                        |                       |                      |                       |
-   |                        |           Kafka: booking.events              |                       |
-   |                        |                       |--BookingCreated---->|                       |
-   |                        |                       |--BookingCreated---------------------------->|
-   |                        |                       |                      |                       |
-   |                        |                       |                      |-- Generate Invoice    |
-   |                        |                       |                      |-- [Persist]           |
-   |                        |                       |                      |                       |
-   |                        |                       |    Kafka: billing.events                     |
-   |                        |                       |<---InvoiceGenerated--|                       |
-   |                        |                       |                      |                       |
-   |                        |                       |-- [Update Booking    |                       |
-   |                        |                       |    State: INVOICED]  |                       |
-   |                        |                       |                      |                       |
-   |                        |                       |                      |   Kafka: billing.events|
-   |                        |                       |                      |---InvoiceGenerated--->|
-   |                        |                       |                      |                       |
-   |                        |                       |                      |          [Send Email] |
+   |-- POST /bookings ----> |                        |                      |                       |
+   |                        |-- CreateBookingCmd --> |                      |                       |
+   |                        |                        |                      |                       |
+   |                        |                        |-- [Validate] ------->|                       |
+   |                        |                        |-- [Persist Event] -->|                       |
+   |                        |                        |                      |                       |
+   |                        |<-- 202 Accepted ------ |                      |                       |
+   |<-- 202 Accepted -------|                        |                      |                       |
+   |                        |                        |                      |                       |
+   |                        |            Kafka: booking.events              |                       |
+   |                        |                        |--BookingCreated----> |                       |
+   |                        |                        |--BookingCreated----------------------------> |
+   |                        |                        |                      |                       |
+   |                        |                        |                      |-- Generate Invoice    |
+   |                        |                        |                      |-- [Persist]           |
+   |                        |                        |                      |                       |
+   |                        |                        |    Kafka: billing.events                     |
+   |                        |                        |<---InvoiceGenerated--|                       |
+   |                        |                        |                      |                       |
+   |                        |                        |-- [Update Booking    |                       |
+   |                        |                        |    State: INVOICED]  |                       |
+   |                        |                        |                      |                       |
+   |                        |                        |                      |  Kafka: billing.events|
+   |                        |                        |                      |---InvoiceGenerated--->|
+   |                        |                        |                      |                       |
+   |                        |                        |                      |          [Send Email] |
    |<----- Email: Invoice Created ------------------------------------------------------------ |
 ```
 
@@ -54,14 +54,14 @@ Customer               Booking Service        Billing Service       Notification
    |                        |-- [Validate State]   |                       |
    |                        |-- [Persist Event]    |                       |
    |                        |                      |                       |
-   |                  Kafka: booking.events         |                       |
-   |                        |--BookingCancelled-->|                       |
+   |                 Kafka: booking.events         |                       |
+   |                        |--BookingCancelled-->|                        |
    |                        |--BookingCancelled------------------------->|
    |                        |                      |                       |
    |                        |                      |-- [Credit Note]       |
    |                        |                      |-- [Refund if paid]    |
    |                        |                      |                       |
-   |                  Kafka: billing.events         |                       |
+   |                  Kafka: billing.events        |                       |
    |                        |<--RefundIssued-------|                       |
    |                        |                      |---RefundIssued------->|
    |                        |                      |                       |

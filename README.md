@@ -46,7 +46,7 @@ It demonstrates how to build **enterprise-grade microservices** with:
   +-------+------+ +------+-------+ +-------+------+ +--------+--------+
   |  Booking     | |  Tracking    | |  Billing     | | Vessel Schedule  |
   |  Service     | |  Service     | |  Service     | | Service          |
-  |  (CQRS+ES)  | | (Kafka       | |  (Saga       | | (Graph+Cache)    |
+  |  (CQRS+ES)   | | (Kafka       | |  (Saga       | | (Graph+Cache)    |
   |              | |  Streams)    | |   Pattern)   | |                  |
   +---------+----+ +------+-------+ +------+-------+ +--------+--------+
             |             |                |                   |
