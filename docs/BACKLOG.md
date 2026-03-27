@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 1 | **Quote Generation Service** | Not started | New service needed | TBD |
 | 2 | **JPA Persistence Adapter** | ✅ Completed (Issue #3 closed) — Fully implemented: BookingJpaEntity, JpaBookingPersistenceAdapter, BookingEntityMapper, JPA auditing, Flyway V1+V2 | T4 (JPA Advanced) | ✅ Closed |
-| 3 | **Kafka Event Publisher** | Using Spring ApplicationEvent (local). Events now drive CQRS projection updater. Kafka integration pending for cross-service communication. | T5 (Kafka) | #7 |
+| 3 | **Kafka Event Publisher** | ✅ Completed (Issue #7 closed) — KafkaBookingEventPublisher with exactly-once, DLQ, consumer with @KafkaListener, KRaft Docker Compose | T5 (Kafka) | ✅ Closed |
 | 4 | **Booking History / Event Store** | ✅ Completed (Issue #6 closed) — Fully implemented: EventStore port, JpaEventStoreAdapter, BookingProjectionUpdater, BookingQueryHandler.getBookingHistory(), Flyway V3 | T3 (CQRS + ES) | ✅ Closed |
 | 5 | **HATEOAS Links** | Not on responses yet | T8 (API Gateway) | #12 |
 | 6 | **Pagination** | List endpoint returns all bookings (no cursor) | T25 (API Design) | #14 |
