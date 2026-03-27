@@ -1,0 +1,268 @@
+# =============================================================================
+# FreightFlow Infrastructure — Docker Compose (Local Development)
+# =============================================================================
+# Provides all infrastructure services needed to run FreightFlow locally.
+# Start with: docker compose up -d
+# Stop with:  docker compose down
+# Reset all:  docker compose down -v  (removes volumes — full data wipe)
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 — Primary relational database
+  # ---------------------------------------------------------------------------
+  # Stores booking aggregates, projections, and outbox events.
+  # Each microservice gets its own database (schema-per-service pattern).
+  # Health check ensures dependent services wait for Postgres to accept connections.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: freightflow-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: freightflow
+      POSTGRES_PASSWORD: freightflow
+      POSTGRES_DB: freightflow_booking
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U freightflow -d freightflow_booking"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - freightflow-network
+
+  # ---------------------------------------------------------------------------
+  # Apache Kafka (KRaft mode) — Event streaming platform
+  # ---------------------------------------------------------------------------
+  # Runs in KRaft mode (Kafka Raft) — NO Zookeeper dependency. KRaft is the
+  # modern consensus protocol that replaces Zookeeper for metadata management.
+  # This simplifies the stack and reduces operational overhead.
+  #
+  # Key configuration:
+  #   - Single node acting as both controller and broker (dev mode)
+  #   - PLAINTEXT listener on port 9092 for host access
+  #   - INTERNAL listener on port 29092 for inter-container communication
+  #   - Auto topic creation enabled for development convenience
+  # ---------------------------------------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.6.2
+    container_name: freightflow-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    environment:
+      # --- KRaft Mode (no Zookeeper) ---
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+
+      # --- Listeners ---
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093,INTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      # --- Topic defaults ---
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+      # --- Log configuration ---
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_LOG_RETENTION_HOURS: 168  # 7 days for local dev
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - freightflow-network
+
+  # ---------------------------------------------------------------------------
+  # Confluent Schema Registry — Schema management for Kafka
+  # ---------------------------------------------------------------------------
+  # Provides schema validation and evolution for Kafka messages.
+  # Supports Avro, JSON Schema, and Protobuf formats.
+  # Currently using JSON; Avro migration planned for production.
+  # Depends on Kafka being healthy before starting.
+  # ---------------------------------------------------------------------------
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.2
+    container_name: freightflow-schema-registry
+    restart: unless-stopped
+    ports:
+      - "8091:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - freightflow-network
+
+  # ---------------------------------------------------------------------------
+  # Redis 7 — Caching and session storage
+  # ---------------------------------------------------------------------------
+  # Used for:
+  #   - Rate limiting (API gateway)
+  #   - Caching frequently accessed booking data
+  #   - Distributed locks (Redisson)
+  #   - Session storage (Keycloak adapter)
+  # Alpine image for minimal footprint (~30MB).
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: freightflow-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - freightflow-network
+
+  # ---------------------------------------------------------------------------
+  # Keycloak 25 — Identity and Access Management
+  # ---------------------------------------------------------------------------
+  # Provides OAuth2/OIDC authentication and authorization.
+  # Runs in dev mode (--start-dev) with H2 in-memory database.
+  # For production: use PostgreSQL backend and --optimized flag.
+  #
+  # Default admin credentials: admin/admin
+  # Access the admin console at: http://localhost:8180
+  # ---------------------------------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.6
+    container_name: freightflow-keycloak
+    restart: unless-stopped
+    ports:
+      - "8180:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    command: start-dev
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - freightflow-network
+
+  # ---------------------------------------------------------------------------
+  # Kafka UI — Web-based Kafka management console
+  # ---------------------------------------------------------------------------
+  # Provides a visual interface for:
+  #   - Browsing topics, partitions, and consumer groups
+  #   - Viewing and producing messages
+  #   - Monitoring consumer lag and throughput
+  #   - Inspecting DLQ messages for failed event investigation
+  #
+  # Access at: http://localhost:8090
+  # ---------------------------------------------------------------------------
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: freightflow-kafka-ui
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: freightflow-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - freightflow-network
+
+  # ---------------------------------------------------------------------------
+  # pgAdmin 4 — PostgreSQL administration console
+  # ---------------------------------------------------------------------------
+  # Web-based database management tool for inspecting tables, running queries,
+  # and monitoring PostgreSQL performance.
+  #
+  # Default credentials: admin@freightflow.com / admin
+  # Access at: http://localhost:5050
+  # ---------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: freightflow-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@freightflow.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/misc/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - freightflow-network
+
+# =============================================================================
+# Named Volumes — persistent data across container restarts
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  kafka-data:
+    driver: local
+  redis-data:
+    driver: local
+  pgadmin-data:
+    driver: local
+
+# =============================================================================
+# Network — shared bridge network for inter-service communication
+# =============================================================================
+networks:
+  freightflow-network:
+    driver: bridge
+    name: freightflow-network

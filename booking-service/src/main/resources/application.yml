@@ -47,6 +47,34 @@ spring:
           time_zone: UTC
 
   # ---------------------------------------------------------------------------
+  # Kafka — Event streaming configuration
+  # ---------------------------------------------------------------------------
+  # Bootstrap servers are injected via environment variable for flexibility.
+  # Producer: acks=all + idempotence for exactly-once delivery.
+  # Consumer: manual commit (enable-auto-commit=false) for at-least-once.
+  # ---------------------------------------------------------------------------
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        retries: 3
+        retry.backoff.ms: 1000
+        linger.ms: 5
+        batch.size: 16384
+    consumer:
+      group-id: booking-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        max.poll.records: 100
+
+  # ---------------------------------------------------------------------------
   # Flyway Database Migrations
   # ---------------------------------------------------------------------------
   flyway:
@@ -86,3 +114,11 @@ logging:
     com.freightflow: INFO
     org.springframework.web: INFO
     org.hibernate.SQL: WARN
+
+# =============================================================================
+# FreightFlow Custom Properties
+# =============================================================================
+freightflow:
+  kafka:
+    partitions: 12
+    replication-factor: 1

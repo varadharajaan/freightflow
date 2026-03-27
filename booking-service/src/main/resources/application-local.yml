@@ -15,6 +15,12 @@ spring:
     password: freightflow
 
   # ---------------------------------------------------------------------------
+  # Kafka — Local development (single-node via Docker Compose)
+  # ---------------------------------------------------------------------------
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  # ---------------------------------------------------------------------------
   # JPA — show SQL for debugging during local development
   # ---------------------------------------------------------------------------
   jpa:
@@ -35,12 +41,15 @@ spring:
     baseline-on-migrate: true
 
 # =============================================================================
-# Profiling — enabled for local development
+# FreightFlow Custom Properties — Local overrides
 # =============================================================================
 freightflow:
   profiling:
     sql:
       enabled: true
+  kafka:
+    partitions: 3          # fewer partitions for local single-node Kafka
+    replication-factor: 1
 
 # =============================================================================
 # Logging — verbose output for local development
