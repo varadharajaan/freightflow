@@ -60,11 +60,36 @@ docker-compose.override.yml
 *.tfvars
 !terraform.tfvars.example
 
-# Logs
+# Logs & Application Output
 logs/
+log/
+output/
+out/
 *.log
+*.log.*
+*.out
+spring.log
 
 # Private planning docs (NOT for public repo)
 REQUIREMENTS.md
 PROJECT_SUGGESTIONS.md
+PROJECT_IDEAS.md
 TOPICS.md
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+dump.rdb
+
+# Heap dumps
+*.hprof
+
+# GraalVM native image
+*.gu
+native-image/
+
+# Coverage & reports (generated)
+coverage/
+*.exec
+jacoco.exec
