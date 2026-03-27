@@ -1,8 +1,10 @@
 package com.freightflow.booking.application.query;
 
 import com.freightflow.commons.exception.ResourceNotFoundException;
+import com.freightflow.commons.observability.profiling.Profiled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,11 +60,17 @@ public class BookingQueryHandler {
     /**
      * Retrieves a single booking projection by its ID.
      *
+     * <h3>Spring Advanced Feature: @Cacheable</h3>
+     * <p>Results are cached in the "bookings" cache region. Cache is evicted
+     * when the projection is updated by {@code BookingProjectionUpdater}.</p>
+     *
      * @param bookingId the booking aggregate ID
      * @return the booking view projection
      * @throws ResourceNotFoundException if no booking projection exists for the given ID
      */
     @Transactional(readOnly = true)
+    @Cacheable(value = "bookings", key = "#bookingId", unless = "#result == null")
+    @Profiled(value = "getBookingQuery", slowThresholdMs = 200)
     public BookingView getBooking(String bookingId) {
         log.debug("Querying booking projection: bookingId={}", bookingId);
 
