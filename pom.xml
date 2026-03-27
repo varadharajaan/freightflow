@@ -17,6 +17,8 @@
         <module>freightflow-bom</module>
         <module>freightflow-parent</module>
         <module>freightflow-commons</module>
+        <module>discovery-server</module>
+        <module>config-server</module>
         <module>booking-service</module>
     </modules>
 

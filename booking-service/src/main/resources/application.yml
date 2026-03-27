@@ -10,6 +10,15 @@ spring:
     name: booking-service
 
   # ---------------------------------------------------------------------------
+  # Centralized Configuration — import from Config Server
+  # ---------------------------------------------------------------------------
+  # The 'optional:' prefix allows the service to start even if the Config
+  # Server is unavailable, falling back to local configuration.
+  # ---------------------------------------------------------------------------
+  config:
+    import: optional:configserver:http://config:config@${CONFIG_SERVER_HOST:localhost}:8888
+
+  # ---------------------------------------------------------------------------
   # Virtual Threads (Java 21) — enables lightweight threads for I/O-bound work
   # ---------------------------------------------------------------------------
   threads:
@@ -122,3 +131,14 @@ freightflow:
   kafka:
     partitions: 12
     replication-factor: 1
+
+# =============================================================================
+# Eureka Client — Service Registration and Discovery
+# =============================================================================
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:eureka@${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.value}
