@@ -50,7 +50,7 @@ public class Booking {
     private final CustomerId customerId;
     private final Cargo cargo;
     private final LocalDate requestedDepartureDate;
-    private final Instant createdAt;
+    private Instant createdAt;
 
     private BookingStatus status;
     private VoyageId voyageId;
@@ -187,6 +187,31 @@ public class Booking {
     }
 
     // ==================== Domain Event Management ====================
+
+    /**
+     * Reconstitutes a Booking aggregate from persisted state.
+     *
+     * <p>This method is used ONLY by the persistence adapter when loading a booking
+     * from the database. It bypasses the normal factory method and validation because
+     * the data has already been validated when it was originally created.</p>
+     *
+     * <p>No domain events are emitted — this is state reconstruction, not a new action.</p>
+     *
+     * @return a Booking aggregate in its persisted state
+     */
+    public static Booking reconstitute(BookingId id, CustomerId customerId, Cargo cargo,
+                                        LocalDate requestedDepartureDate, BookingStatus status,
+                                        VoyageId voyageId, String cancellationReason,
+                                        Instant createdAt, Instant updatedAt, long version) {
+        var booking = new Booking(id, customerId, cargo, requestedDepartureDate);
+        booking.status = status;
+        booking.voyageId = voyageId;
+        booking.cancellationReason = cancellationReason;
+        booking.createdAt = createdAt;
+        booking.updatedAt = updatedAt;
+        booking.version = version;
+        return booking;
+    }
 
     /**
      * Returns and clears all uncommitted domain events.
