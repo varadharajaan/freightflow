@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.freightflow</groupId>
+        <artifactId>freightflow-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../freightflow-parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>freightflow-commons</artifactId>
+    <packaging>pom</packaging>
+
+    <name>FreightFlow :: Commons</name>
+    <description>Shared libraries used across all FreightFlow microservices</description>
+
+    <modules>
+        <module>commons-domain</module>
+        <module>commons-events</module>
+        <module>commons-security</module>
+        <module>commons-observability</module>
+        <module>commons-exception</module>
+        <module>commons-testing</module>
+    </modules>
+
+</project>
