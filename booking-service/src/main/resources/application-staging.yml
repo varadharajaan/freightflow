@@ -1,0 +1,56 @@
+# ==============================================================================
+# FreightFlow Booking Service — STAGING Profile
+# ==============================================================================
+# Pre-production environment. Mirrors prod configuration but with relaxed
+# monitoring thresholds and additional diagnostics.
+# ==============================================================================
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 5
+      connection-timeout: 5000
+      leak-detection-threshold: 30000
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        generate_statistics: true
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 500
+
+  flyway:
+    enabled: true
+
+# --- Profiling ---
+freightflow:
+  profiling:
+    sql:
+      enabled: true
+
+# --- Logging (JSON for ELK) ---
+logging:
+  level:
+    com.freightflow: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.stat: INFO
+    org.springframework: INFO
+  config: classpath:logback-spring.xml
+
+# --- Actuator ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized

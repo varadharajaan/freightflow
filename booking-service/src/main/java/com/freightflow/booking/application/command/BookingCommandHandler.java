@@ -12,6 +12,7 @@ import com.freightflow.commons.domain.PortCode;
 import com.freightflow.commons.domain.VoyageId;
 import com.freightflow.commons.domain.Weight;
 import com.freightflow.commons.exception.ResourceNotFoundException;
+import com.freightflow.commons.observability.profiling.Profiled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -76,6 +77,7 @@ public class BookingCommandHandler {
      * @return the affected booking
      */
     @Transactional
+    @Profiled(value = "handleBookingCommand", slowThresholdMs = 500)
     public Booking handle(BookingCommand command) {
         log.debug("Handling command: type={}", command.getClass().getSimpleName());
 

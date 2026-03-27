@@ -22,12 +22,25 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        generate_statistics: true
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 100
 
   # ---------------------------------------------------------------------------
   # Flyway — allow baseline for fresh local databases
   # ---------------------------------------------------------------------------
   flyway:
     baseline-on-migrate: true
+
+# =============================================================================
+# Profiling — enabled for local development
+# =============================================================================
+freightflow:
+  profiling:
+    sql:
+      enabled: true
 
 # =============================================================================
 # Logging — verbose output for local development

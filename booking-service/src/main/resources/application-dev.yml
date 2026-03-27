@@ -1,0 +1,51 @@
+# ==============================================================================
+# FreightFlow Booking Service — DEV Profile
+# ==============================================================================
+# For cloud development environment. Connects to shared dev infrastructure.
+# SQL profiling enabled, debug logging active.
+# ==============================================================================
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://dev-db.freightflow.internal:5432/freightflow_booking}
+    username: ${DB_USERNAME:freightflow_dev}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 3
+      connection-timeout: 10000
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 200
+
+  flyway:
+    enabled: true
+
+# --- Profiling ---
+freightflow:
+  profiling:
+    sql:
+      enabled: true
+
+# --- Logging ---
+logging:
+  level:
+    com.freightflow: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.stat: DEBUG
+    org.springframework.web: INFO
+
+# --- Actuator ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,configprops
