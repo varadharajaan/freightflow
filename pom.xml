@@ -24,6 +24,8 @@
         <module>tracking-service</module>
         <module>billing-service</module>
         <module>vessel-schedule-service</module>
+        <module>customer-service</module>
+        <module>notification-service</module>
     </modules>
 
     <properties>
