@@ -90,11 +90,11 @@ It demonstrates how to build **enterprise-grade microservices** with:
 | `commons-testing` | Test fixtures & custom assertions | Test utilities |
 | `commons-exception` | Global exception handling, RFC 7807 Problem Details | Sealed exception hierarchy |
 | `booking-service` | Booking lifecycle management | CQRS, Event Sourcing |
-| `tracking-service` | Real-time container tracking (Planned) | Kafka Streams, WebSocket |
-| `billing-service` | Invoicing & payment processing (Planned) | Saga, Outbox |
-| `vessel-schedule-service` | Vessel routes & schedules (Planned) | Graph algorithms, Caching |
-| `customer-service` | Customer & contract management (Planned) | RBAC, Multi-tenancy |
-| `notification-service` | Multi-channel notifications (Planned) | Observer, Async |
+| `tracking-service` | Real-time container position tracking | Kafka Streams, WebSocket, State Machine |
+| `billing-service` | Invoicing, payments, double-entry ledger | Saga, Strategy (pricing), State Machine |
+| `vessel-schedule-service` | Fleet management, voyage scheduling, capacity | Graph, Caching, Optimistic Lock |
+| `customer-service` | Customer profiles, contracts, credit management | RBAC, Multi-tenancy, Builder |
+| `notification-service` | Multi-channel alerts (email, SMS, webhook) | Strategy (channel), Observer, Template Method |
 | `api-gateway` | Edge service — routes, rate limits, circuit breaks, JWT validation | Gateway, Circuit Breaker |
 | `config-server` | Centralized Git-backed configuration | Spring Cloud Config |
 | `discovery-server` | Service registry & discovery dashboard | Eureka Server |
@@ -226,12 +226,12 @@ freightflow/
 |   |-- commons-observability/          # Logging, metrics, tracing
 |   |-- commons-testing/               # Test fixtures, Testcontainer configs
 |   |-- commons-exception/             # Global exception handling, RFC 7807
-|-- booking-service/                    # CQRS + Event Sourcing
-|-- tracking-service/                   # Kafka Streams + WebSocket  # (planned)
-|-- billing-service/                    # Saga orchestration  # (planned)
-|-- vessel-schedule-service/            # Route optimization  # (planned)
-|-- customer-service/                   # RBAC + multi-tenancy  # (planned)
-|-- notification-service/              # Async notifications  # (planned)
+|-- booking-service/                    # CQRS + Event Sourcing (port 8081)
+|-- tracking-service/                   # Real-time container tracking (port 8082)
+|-- billing-service/                    # Invoicing + Saga (port 8083)
+|-- vessel-schedule-service/            # Fleet + capacity management (port 8084)
+|-- customer-service/                   # RBAC + contracts + credit (port 8085)
+|-- notification-service/              # Multi-channel alerts (port 8086)
 |-- api-gateway/                       # Spring Cloud Gateway (port 8080)
 |-- config-server/                     # Spring Cloud Config (Git-backed, port 8888)
 |-- discovery-server/                  # Eureka Server (port 8761)

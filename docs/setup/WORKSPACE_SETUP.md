@@ -138,7 +138,7 @@ Environment variables: SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/fr
 
 ## Port Allocation
 
-> **Note:** Currently `api-gateway` (8080), `booking-service` (8081), `discovery-server` (8761), and `config-server` (8888) are runnable. Other service ports are reserved for future implementation.
+> **Note:** All 9 services are implemented and runnable: `api-gateway` (8080), `booking-service` (8081), `tracking-service` (8082), `billing-service` (8083), `vessel-schedule-service` (8084), `customer-service` (8085), `notification-service` (8086), `discovery-server` (8761), `config-server` (8888).
 
 | Service | Port | Debug Port |
 |---|---|---|
@@ -170,7 +170,7 @@ Environment variables: SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/fr
 | Kiali (Istio) | 20001 |
 | Eureka Dashboard | 8761 |
 
-> **Note:** Currently `api-gateway` (8080), `booking-service` (8081), `discovery-server` (8761), and `config-server` (8888) are runnable. Other service ports are reserved for future implementation.
+> **Note:** All 9 services are implemented and runnable: `api-gateway` (8080), `booking-service` (8081), `tracking-service` (8082), `billing-service` (8083), `vessel-schedule-service` (8084), `customer-service` (8085), `notification-service` (8086), `discovery-server` (8761), `config-server` (8888).
 
 ---
 

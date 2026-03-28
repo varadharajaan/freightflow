@@ -46,9 +46,9 @@
 | **discovery-server** | Eureka Server (port 8761) with dashboard | ✅ Implemented (Issue #11) |
 | **config-server** | Spring Cloud Config, Git-backed (port 8888) | ✅ Implemented (Issue #11) |
 | **quote-service** | Generate freight quotes based on route, container type, weight | Planned (Phase 2-3) |
-| **tracking-service** | Real-time container position tracking | Planned (Phase 2) |
-| **billing-service** | Invoice generation, payment processing | Planned (Phase 2-3) |
-| **vessel-schedule-service** | Vessel routes and schedule management | Planned (Phase 3) |
-| **customer-service** | Customer profiles, contracts, RBAC | Planned (Phase 3-4) |
-| **notification-service** | Email, SMS, webhook notifications | Planned (Phase 3) |
+| **tracking-service** | Real-time container tracking, milestones, position updates | ✅ Implemented |
+| **billing-service** | Invoicing, payments, double-entry ledger, Saga participant | ✅ Implemented |
+| **vessel-schedule-service** | Fleet management, voyage scheduling, capacity management | ✅ Implemented |
+| **customer-service** | Customer profiles, contracts, credit management, RBAC | ✅ Implemented |
+| **notification-service** | Multi-channel alerts (email, SMS, webhook), pure Kafka consumer | ✅ Implemented |
 | **api-gateway** | Spring Cloud Gateway with rate limiting | ✅ Implemented (Issue #12) |
