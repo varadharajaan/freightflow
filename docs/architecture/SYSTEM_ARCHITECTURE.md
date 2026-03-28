@@ -93,8 +93,8 @@ This document describes the FreightFlow architecture using the C4 model
 | **Vessel Schedule Service** | Spring Boot 3.3 + Java 21 | Route management, schedule optimization |
 | **Customer Service** | Spring Boot 3.3 + Spring Security | Customer management, RBAC |
 | **Notification Service** | Spring Boot 3.3 + Kafka | Multi-channel notifications (email, SMS, webhook) |
-| **Eureka** | Spring Cloud Netflix Eureka | Service registration and discovery |
-| **Config Server** | Spring Cloud Config | Centralized Git-backed configuration |
+| **Eureka** | Spring Cloud Netflix Eureka | Service registration and discovery — **✅ Implemented** (port 8761) |
+| **Config Server** | Spring Cloud Config | Centralized Git-backed configuration — **✅ Implemented** (port 8888) |
 | **Apache Kafka** | Kafka 3.7+ | Event backbone, async messaging |
 | **PostgreSQL** | PostgreSQL 16 | Relational data (database-per-service) |
 | **Redis** | Redis 7+ | Distributed caching, session store, rate limiting |

@@ -96,8 +96,8 @@ It demonstrates how to build **enterprise-grade microservices** with:
 | `customer-service` | Customer & contract management (Planned) | RBAC, Multi-tenancy |
 | `notification-service` | Multi-channel notifications (Planned) | Observer, Async |
 | `api-gateway` | Request routing & rate limiting (Planned) | Gateway, Circuit Breaker |
-| `config-server` | Centralized configuration (Planned) | Spring Cloud Config |
-| `discovery-server` | Service registry (Planned) | Eureka |
+| `config-server` | Centralized Git-backed configuration | Spring Cloud Config |
+| `discovery-server` | Service registry & discovery dashboard | Eureka Server |
 
 ---
 
@@ -233,8 +233,9 @@ freightflow/
 |-- customer-service/                   # RBAC + multi-tenancy  # (planned)
 |-- notification-service/              # Async notifications  # (planned)
 |-- api-gateway/                       # Spring Cloud Gateway  # (planned)
-|-- config-server/                     # Spring Cloud Config  # (planned)
-|-- discovery-server/                  # Eureka Server  # (planned)
+|-- config-server/                     # Spring Cloud Config (Git-backed, port 8888)
+|-- discovery-server/                  # Eureka Server (port 8761)
+|-- config-repo/                       # Centralized config files (per-service YAMLs)
 |-- infrastructure/
 |   |-- docker/                        # Dockerfiles, docker-compose.yml
 |   |-- kubernetes/                    # K8s manifests, Helm charts

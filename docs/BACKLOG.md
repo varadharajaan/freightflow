@@ -38,16 +38,17 @@
 
 ---
 
-## Services Not Yet Created
+## Services Status
 
-| Service | Description | When |
+| Service | Description | Status |
 |---|---|---|
-| **quote-service** | Generate freight quotes based on route, container type, weight | Phase 2-3 |
-| **tracking-service** | Real-time container position tracking | Phase 2 |
-| **billing-service** | Invoice generation, payment processing | Phase 2-3 |
-| **vessel-schedule-service** | Vessel routes and schedule management | Phase 3 |
-| **customer-service** | Customer profiles, contracts, RBAC | Phase 3-4 |
-| **notification-service** | Email, SMS, webhook notifications | Phase 3 |
-| **api-gateway** | Spring Cloud Gateway with rate limiting | Phase 3 |
-| **config-server** | Spring Cloud Config (Git-backed) | Phase 3 |
-| **discovery-server** | Eureka Server | Phase 3 |
+| **booking-service** | Booking lifecycle with CQRS, Event Sourcing, Kafka | ✅ Implemented |
+| **discovery-server** | Eureka Server (port 8761) with dashboard | ✅ Implemented (Issue #11) |
+| **config-server** | Spring Cloud Config, Git-backed (port 8888) | ✅ Implemented (Issue #11) |
+| **quote-service** | Generate freight quotes based on route, container type, weight | Planned (Phase 2-3) |
+| **tracking-service** | Real-time container position tracking | Planned (Phase 2) |
+| **billing-service** | Invoice generation, payment processing | Planned (Phase 2-3) |
+| **vessel-schedule-service** | Vessel routes and schedule management | Planned (Phase 3) |
+| **customer-service** | Customer profiles, contracts, RBAC | Planned (Phase 3-4) |
+| **notification-service** | Email, SMS, webhook notifications | Planned (Phase 3) |
+| **api-gateway** | Spring Cloud Gateway with rate limiting | Planned (Phase 3) |
