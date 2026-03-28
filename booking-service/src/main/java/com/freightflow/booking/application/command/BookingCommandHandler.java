@@ -15,6 +15,7 @@ import com.freightflow.commons.exception.ResourceNotFoundException;
 import com.freightflow.commons.observability.profiling.Profiled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,16 +56,24 @@ public class BookingCommandHandler {
     private final BookingRepository bookingRepository;
     private final EventStore eventStore;
     private final BookingEventPublisher eventPublisher;
+    private final CacheManager cacheManager;
 
     /**
      * Constructor injection — all dependencies are final (Dependency Inversion Principle).
+     *
+     * @param bookingRepository the booking aggregate repository
+     * @param eventStore        the event store for event sourcing
+     * @param eventPublisher    the outbox-based event publisher
+     * @param cacheManager      the Spring cache manager for programmatic cache eviction
      */
     public BookingCommandHandler(BookingRepository bookingRepository,
                                   EventStore eventStore,
-                                  BookingEventPublisher eventPublisher) {
+                                  BookingEventPublisher eventPublisher,
+                                  CacheManager cacheManager) {
         this.bookingRepository = Objects.requireNonNull(bookingRepository);
         this.eventStore = Objects.requireNonNull(eventStore);
         this.eventPublisher = Objects.requireNonNull(eventPublisher);
+        this.cacheManager = Objects.requireNonNull(cacheManager, "CacheManager must not be null");
     }
 
     /**
@@ -90,6 +99,10 @@ public class BookingCommandHandler {
 
     /**
      * Handles booking creation: validates input, creates aggregate, persists, publishes events.
+     *
+     * <p><b>Cache contract:</b> Evicts the "customerBookings" cache region (all entries)
+     * because a new booking changes the customer's booking list. The "bookings" cache
+     * does not need eviction since this is a new entry not previously cached.</p>
      */
     private Booking handleCreate(CreateBookingCommand cmd) {
         log.debug("Creating booking: customerId={}, route={}→{}, containers={}x{}",
@@ -122,6 +135,9 @@ public class BookingCommandHandler {
         // Publish events for downstream services and read model projections
         eventPublisher.publishAll(events);
 
+        // Evict customerBookings cache — new booking changes the customer's list
+        evictCustomerBookingsCache();
+
         log.info("Booking created: bookingId={}, customerId={}, status={}",
                 saved.getId().asString(), cmd.customerId(), saved.getStatus());
 
@@ -130,6 +146,11 @@ public class BookingCommandHandler {
 
     /**
      * Handles booking confirmation: loads aggregate, transitions state, persists, publishes.
+     *
+     * <p><b>Cache contract:</b> Evicts the specific booking from the "bookings" cache
+     * (keyed by bookingId) because the booking status has changed. Also evicts
+     * "customerBookings" (all entries) because the customer's booking list view
+     * includes status information.</p>
      */
     private Booking handleConfirm(ConfirmBookingCommand cmd) {
         log.debug("Confirming booking: bookingId={}, voyageId={}", cmd.bookingId(), cmd.voyageId());
@@ -144,6 +165,10 @@ public class BookingCommandHandler {
         eventStore.append(saved.getId(), events, currentVersion);
         eventPublisher.publishAll(events);
 
+        // Evict caches — booking state changed
+        evictBookingCache(cmd.bookingId());
+        evictCustomerBookingsCache();
+
         log.info("Booking confirmed: bookingId={}, voyageId={}", cmd.bookingId(), cmd.voyageId());
 
         return saved;
@@ -151,6 +176,11 @@ public class BookingCommandHandler {
 
     /**
      * Handles booking cancellation: loads aggregate, cancels, persists, publishes.
+     *
+     * <p><b>Cache contract:</b> Evicts the specific booking from the "bookings" cache
+     * (keyed by bookingId) because the booking status has changed to CANCELLED.
+     * Also evicts "customerBookings" (all entries) because the customer's booking
+     * list view includes status information.</p>
      */
     private Booking handleCancel(CancelBookingCommand cmd) {
         log.debug("Cancelling booking: bookingId={}, reason={}", cmd.bookingId(), cmd.reason());
@@ -165,9 +195,48 @@ public class BookingCommandHandler {
         eventStore.append(saved.getId(), events, currentVersion);
         eventPublisher.publishAll(events);
 
+        // Evict caches — booking state changed
+        evictBookingCache(cmd.bookingId());
+        evictCustomerBookingsCache();
+
         log.info("Booking cancelled: bookingId={}, reason={}", cmd.bookingId(), cmd.reason());
 
         return saved;
+    }
+
+    // ==================== Cache Eviction Helpers ====================
+
+    /**
+     * Evicts a specific booking entry from the "bookings" cache.
+     *
+     * <p>Programmatic eviction is used instead of {@code @CacheEvict} annotations because
+     * the command handler dispatches to private methods via {@link #handle(BookingCommand)},
+     * and Spring AOP proxies do not intercept self-invocations.</p>
+     *
+     * @param bookingId the booking ID whose cache entry should be evicted
+     */
+    private void evictBookingCache(String bookingId) {
+        var cache = cacheManager.getCache("bookings");
+        if (cache != null) {
+            cache.evict(bookingId);
+            log.debug("Evicted cache: region=bookings, key={}", bookingId);
+        }
+    }
+
+    /**
+     * Evicts all entries from the "customerBookings" cache.
+     *
+     * <p>A full region eviction is necessary because booking mutations (create, confirm,
+     * cancel) affect the customer's aggregated booking list. Fine-grained per-customer
+     * eviction would require resolving the customer ID from the booking, which adds
+     * coupling for marginal benefit.</p>
+     */
+    private void evictCustomerBookingsCache() {
+        var cache = cacheManager.getCache("customerBookings");
+        if (cache != null) {
+            cache.clear();
+            log.debug("Evicted cache: region=customerBookings, allEntries=true");
+        }
     }
 
     private Booking loadBookingOrThrow(String bookingId) {
