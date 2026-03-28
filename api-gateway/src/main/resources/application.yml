@@ -1,0 +1,121 @@
+# =============================================================================
+# FreightFlow API Gateway — Application Configuration
+# =============================================================================
+# Edge service running on Spring Cloud Gateway (reactive/Netty).
+# Routes all /api/v1/** traffic to downstream microservices via Eureka.
+# Port: 8080
+# =============================================================================
+
+spring:
+  application:
+    name: api-gateway
+
+  # ---------------------------------------------------------------------------
+  # Reactive stack — Spring WebFlux (Netty), NOT MVC (Tomcat)
+  # ---------------------------------------------------------------------------
+  main:
+    web-application-type: reactive
+
+  # ---------------------------------------------------------------------------
+  # Spring Cloud Gateway — Discovery-based routing
+  # ---------------------------------------------------------------------------
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          # Auto-create routes for all Eureka-registered services
+          enabled: true
+          # Use lowercase service IDs (e.g., booking-service instead of BOOKING-SERVICE)
+          lower-case-service-id: true
+
+  # ---------------------------------------------------------------------------
+  # Centralized Configuration — Spring Cloud Config Server
+  # ---------------------------------------------------------------------------
+  config:
+    import: optional:configserver://${CONFIG_SERVER_URL:http://localhost:8888}
+
+  # ---------------------------------------------------------------------------
+  # Security — OAuth2 Resource Server (JWT validation)
+  # ---------------------------------------------------------------------------
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/freightflow}
+
+# =============================================================================
+# Server Configuration
+# =============================================================================
+server:
+  port: 8080
+
+# =============================================================================
+# Service Discovery — Eureka Client
+# =============================================================================
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:eureka@${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# =============================================================================
+# Resilience4j — Circuit Breaker Defaults for Gateway Routes
+# =============================================================================
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        # Number of calls in the sliding window
+        sliding-window-size: 10
+        # Minimum calls before the circuit breaker can calculate the error rate
+        minimum-number-of-calls: 5
+        # Failure rate threshold (percentage) to trip the circuit
+        failure-rate-threshold: 50
+        # Time the circuit breaker stays open before transitioning to half-open
+        wait-duration-in-open-state: 10s
+        # Number of permitted calls in half-open state
+        permitted-number-of-calls-in-half-open-state: 3
+        # Automatically transition from open to half-open (don't wait for a call)
+        automatic-transition-from-open-to-half-open-enabled: true
+    instances:
+      bookingServiceCB:
+        base-config: default
+      trackingServiceCB:
+        base-config: default
+      billingServiceCB:
+        base-config: default
+      customerServiceCB:
+        base-config: default
+      vesselScheduleServiceCB:
+        base-config: default
+
+  timelimiter:
+    configs:
+      default:
+        # Timeout for downstream calls (circuit breaker wraps this)
+        timeout-duration: 5s
+
+# =============================================================================
+# Actuator — Health, Metrics, Gateway Endpoints
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    health:
+      show-details: when-authorized
+    gateway:
+      enabled: true
+
+# =============================================================================
+# Logging
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    com.freightflow.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+    io.github.resilience4j: INFO
