@@ -21,6 +21,9 @@
         <module>config-server</module>
         <module>api-gateway</module>
         <module>booking-service</module>
+        <module>tracking-service</module>
+        <module>billing-service</module>
+        <module>vessel-schedule-service</module>
     </modules>
 
     <properties>
