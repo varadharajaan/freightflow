@@ -51,4 +51,4 @@
 | **vessel-schedule-service** | Vessel routes and schedule management | Planned (Phase 3) |
 | **customer-service** | Customer profiles, contracts, RBAC | Planned (Phase 3-4) |
 | **notification-service** | Email, SMS, webhook notifications | Planned (Phase 3) |
-| **api-gateway** | Spring Cloud Gateway with rate limiting | Planned (Phase 3) |
+| **api-gateway** | Spring Cloud Gateway with rate limiting | ✅ Implemented (Issue #12) |

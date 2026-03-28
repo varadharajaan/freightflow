@@ -86,7 +86,7 @@ This document describes the FreightFlow architecture using the C4 model
 
 | Container | Technology | Purpose |
 |---|---|---|
-| **API Gateway** | Spring Cloud Gateway | Request routing, rate limiting, authentication |
+| **API Gateway** | Spring Cloud Gateway | Request routing, rate limiting, authentication — **✅ Implemented** (port 8080) |
 | **Booking Service** | Spring Boot 3.3 + Java 21 | Booking lifecycle (CQRS + Event Sourcing) |
 | **Tracking Service** | Spring Boot 3.3 + Kafka Streams | Real-time container position tracking |
 | **Billing Service** | Spring Boot 3.3 + Java 21 | Invoice generation, payment processing (Saga) |

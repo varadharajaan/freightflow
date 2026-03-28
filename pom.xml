@@ -19,6 +19,7 @@
         <module>freightflow-commons</module>
         <module>discovery-server</module>
         <module>config-server</module>
+        <module>api-gateway</module>
         <module>booking-service</module>
     </modules>
 

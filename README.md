@@ -95,7 +95,7 @@ It demonstrates how to build **enterprise-grade microservices** with:
 | `vessel-schedule-service` | Vessel routes & schedules (Planned) | Graph algorithms, Caching |
 | `customer-service` | Customer & contract management (Planned) | RBAC, Multi-tenancy |
 | `notification-service` | Multi-channel notifications (Planned) | Observer, Async |
-| `api-gateway` | Request routing & rate limiting (Planned) | Gateway, Circuit Breaker |
+| `api-gateway` | Edge service — routes, rate limits, circuit breaks, JWT validation | Gateway, Circuit Breaker |
 | `config-server` | Centralized Git-backed configuration | Spring Cloud Config |
 | `discovery-server` | Service registry & discovery dashboard | Eureka Server |
 
@@ -232,7 +232,7 @@ freightflow/
 |-- vessel-schedule-service/            # Route optimization  # (planned)
 |-- customer-service/                   # RBAC + multi-tenancy  # (planned)
 |-- notification-service/              # Async notifications  # (planned)
-|-- api-gateway/                       # Spring Cloud Gateway  # (planned)
+|-- api-gateway/                       # Spring Cloud Gateway (port 8080)
 |-- config-server/                     # Spring Cloud Config (Git-backed, port 8888)
 |-- discovery-server/                  # Eureka Server (port 8761)
 |-- config-repo/                       # Centralized config files (per-service YAMLs)
