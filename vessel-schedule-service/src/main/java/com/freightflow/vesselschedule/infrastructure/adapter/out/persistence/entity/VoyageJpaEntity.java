@@ -1,9 +1,13 @@
 package com.freightflow.vesselschedule.infrastructure.adapter.out.persistence.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import org.springframework.data.annotation.CreatedDate;
@@ -11,6 +15,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -57,10 +63,16 @@ public class VoyageJpaEntity {
     @Column(name = "version", nullable = false)
     private long version;
 
+    @OneToMany(mappedBy = "voyage", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("sequenceNumber ASC")
+    private List<PortCallJpaEntity> portCalls = new ArrayList<>();
+
     /**
-     * Required by JPA. Do not use directly.
+     * No-arg constructor required by JPA. Also used by the
+     * {@link com.freightflow.vesselschedule.infrastructure.adapter.out.persistence.VoyageEntityMapper}
+     * to create entities from domain objects.
      */
-    protected VoyageJpaEntity() {
+    public VoyageJpaEntity() {
     }
 
     // ==================== Getters and Setters ====================
@@ -91,6 +103,9 @@ public class VoyageJpaEntity {
 
     public long getVersion() { return version; }
     public void setVersion(long version) { this.version = version; }
+
+    public List<PortCallJpaEntity> getPortCalls() { return portCalls; }
+    public void setPortCalls(List<PortCallJpaEntity> portCalls) { this.portCalls = portCalls; }
 
     @Override
     public String toString() {
