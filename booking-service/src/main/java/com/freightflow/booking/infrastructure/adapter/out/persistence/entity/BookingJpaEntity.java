@@ -6,6 +6,8 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import org.springframework.data.annotation.CreatedBy;
@@ -41,6 +43,35 @@ import java.util.UUID;
 @Entity
 @Table(name = "bookings")
 @EntityListeners(AuditingEntityListener.class)
+@NamedQueries({
+        /**
+         * Named query: finds all bookings in non-terminal states (excludes CANCELLED and DELIVERED).
+         *
+         * <p>Named queries are validated at application startup — any JPQL syntax error
+         * causes the application to fail fast, rather than at runtime when the query is first used.
+         * They are referenced from the repository by convention: the method name must match
+         * the portion after the entity name prefix (e.g., "findActiveBookings").</p>
+         *
+         * @see com.freightflow.booking.infrastructure.adapter.out.persistence.repository.SpringDataBookingRepository#findActiveBookings()
+         */
+        @NamedQuery(
+                name = "BookingJpaEntity.findActiveBookings",
+                query = "SELECT b FROM BookingJpaEntity b WHERE b.status NOT IN ('CANCELLED', 'DELIVERED') ORDER BY b.createdAt DESC"
+        ),
+        /**
+         * Named query: finds bookings for a specific route (origin → destination).
+         *
+         * <p>Demonstrates named queries with bind parameters ({@code :origin}, {@code :destination}).
+         * Parameters are matched by name to the repository method parameters annotated
+         * with {@code @Param}.</p>
+         *
+         * @see com.freightflow.booking.infrastructure.adapter.out.persistence.repository.SpringDataBookingRepository#findByRoute(String, String)
+         */
+        @NamedQuery(
+                name = "BookingJpaEntity.findByRoute",
+                query = "SELECT b FROM BookingJpaEntity b WHERE b.originPort = :origin AND b.destinationPort = :destination ORDER BY b.requestedDepartureDate"
+        )
+})
 public class BookingJpaEntity {
 
     @Id
