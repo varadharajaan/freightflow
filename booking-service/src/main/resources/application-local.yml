@@ -44,6 +44,8 @@ spring:
 # FreightFlow Custom Properties — Local overrides
 # =============================================================================
 freightflow:
+  security:
+    enabled: false  # Disable JWT validation for local dev — use @WithMockUser in tests
   profiling:
     sql:
       enabled: true

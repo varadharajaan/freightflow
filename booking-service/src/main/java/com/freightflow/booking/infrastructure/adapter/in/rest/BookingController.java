@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,6 +70,7 @@ public class BookingController {
      * @param request the booking creation request (validated via Bean Validation)
      * @return 202 Accepted with the created booking
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'CUSTOMER')")
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody CreateBookingRequest request) {
         log.debug("POST /api/v1/bookings — creating booking: customerId={}, route={}→{}",
@@ -89,6 +91,7 @@ public class BookingController {
      * @param bookingId the booking UUID (path variable)
      * @return 200 OK with the booking details
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'CUSTOMER')")
     @GetMapping("/{bookingId}")
     public ResponseEntity<BookingResponse> getBooking(@PathVariable String bookingId) {
         log.debug("GET /api/v1/bookings/{} — fetching booking", bookingId);
@@ -111,6 +114,7 @@ public class BookingController {
      * @param request   the confirmation request containing the voyage ID
      * @return 200 OK with the confirmed booking
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     @PostMapping("/{bookingId}/confirm")
     public ResponseEntity<BookingResponse> confirmBooking(
             @PathVariable String bookingId,
@@ -137,6 +141,7 @@ public class BookingController {
      * @param request   the cancellation request containing the reason
      * @return 200 OK with the cancelled booking
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'CUSTOMER')")
     @DeleteMapping("/{bookingId}")
     public ResponseEntity<BookingResponse> cancelBooking(
             @PathVariable String bookingId,
@@ -159,6 +164,7 @@ public class BookingController {
      * @param customerId the customer UUID (query parameter)
      * @return 200 OK with a list of bookings (may be empty)
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR') or #customerId == authentication.name")
     @GetMapping
     public ResponseEntity<List<BookingResponse>> getBookingsByCustomer(
             @RequestParam String customerId) {

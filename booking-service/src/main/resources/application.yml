@@ -26,6 +26,19 @@ spring:
       enabled: true
 
   # ---------------------------------------------------------------------------
+  # Security — OAuth2 Resource Server (JWT validation via Keycloak)
+  # ---------------------------------------------------------------------------
+  # The service validates incoming JWTs by fetching the public keys from
+  # Keycloak's JWKS endpoint. The issuer-uri is used to verify the 'iss' claim.
+  # ---------------------------------------------------------------------------
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/freightflow}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/freightflow/protocol/openid-connect/certs}
+
+  # ---------------------------------------------------------------------------
   # PostgreSQL Datasource — credentials injected via environment variables
   # ---------------------------------------------------------------------------
   datasource:
@@ -128,6 +141,10 @@ logging:
 # FreightFlow Custom Properties
 # =============================================================================
 freightflow:
+  security:
+    enabled: true
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}
   kafka:
     partitions: 12
     replication-factor: 1
