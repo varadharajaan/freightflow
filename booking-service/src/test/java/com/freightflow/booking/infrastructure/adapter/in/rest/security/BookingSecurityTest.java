@@ -6,13 +6,13 @@ import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.domain.model.BookingStatus;
 import com.freightflow.booking.domain.model.Cargo;
 import com.freightflow.booking.domain.model.ContainerType;
-import com.freightflow.booking.domain.port.BookingEventPublisher;
-import com.freightflow.booking.domain.port.BookingRepository;
 import com.freightflow.booking.infrastructure.adapter.in.rest.BookingController;
+import com.freightflow.booking.infrastructure.adapter.in.rest.dto.CreateBookingRequest;
 import com.freightflow.booking.infrastructure.adapter.in.rest.dto.ConfirmBookingRequest;
 import com.freightflow.commons.domain.BookingId;
 import com.freightflow.commons.domain.CustomerId;
 import com.freightflow.commons.domain.PortCode;
+import com.freightflow.commons.domain.VoyageId;
 import com.freightflow.commons.domain.Weight;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,12 +25,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -75,7 +75,8 @@ class BookingSecurityTest {
 
     private static final String BOOKINGS_URL = "/api/v1/bookings";
     private static final String BOOKING_ID = UUID.randomUUID().toString();
-    private static final String CUSTOMER_ID = "customer1";
+    private static final String CUSTOMER_ID = UUID.randomUUID().toString();
+    private static final String OTHER_CUSTOMER_ID = UUID.randomUUID().toString();
     private static final String VOYAGE_ID = UUID.randomUUID().toString();
 
     @Autowired
@@ -139,7 +140,7 @@ class BookingSecurityTest {
         @WithMockUser(roles = "ADMIN")
         @DisplayName("should return 200 when admin retrieves a booking")
         void should_Return200_When_ValidAdminToken() throws Exception {
-            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking());
+            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -152,7 +153,7 @@ class BookingSecurityTest {
         @DisplayName("should return 200 when admin confirms a booking")
         void should_Return200_When_AdminConfirms() throws Exception {
             given(bookingService.confirmBooking(eq(BOOKING_ID), eq(VOYAGE_ID)))
-                    .willReturn(stubConfirmedBooking());
+                    .willReturn(stubConfirmedBooking(BOOKING_ID, CUSTOMER_ID));
 
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
@@ -168,7 +169,7 @@ class BookingSecurityTest {
         @DisplayName("should return 200 when admin lists any customer's bookings")
         void should_Return200_When_AdminListsAnyCustomerBookings() throws Exception {
             given(bookingService.getBookingsByCustomer(CUSTOMER_ID))
-                    .willReturn(List.of(stubBooking()));
+                    .willReturn(List.of(stubBooking(BOOKING_ID, CUSTOMER_ID)));
 
             mockMvc.perform(get(BOOKINGS_URL)
                             .param("customerId", CUSTOMER_ID)
@@ -189,7 +190,7 @@ class BookingSecurityTest {
         @DisplayName("should return 200 when operator confirms a booking")
         void should_Return200_When_OperatorConfirms() throws Exception {
             given(bookingService.confirmBooking(eq(BOOKING_ID), eq(VOYAGE_ID)))
-                    .willReturn(stubConfirmedBooking());
+                    .willReturn(stubConfirmedBooking(BOOKING_ID, CUSTOMER_ID));
 
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
@@ -204,7 +205,7 @@ class BookingSecurityTest {
         @WithMockUser(roles = "OPERATOR")
         @DisplayName("should return 200 when operator retrieves a booking")
         void should_Return200_When_OperatorRetrievesBooking() throws Exception {
-            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking());
+            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -232,10 +233,10 @@ class BookingSecurityTest {
         }
 
         @Test
-        @WithMockUser(roles = "CUSTOMER")
+        @WithMockUser(username = CUSTOMER_ID, roles = "CUSTOMER")
         @DisplayName("should return 200 when customer retrieves a booking")
         void should_Return200_When_CustomerRetrievesBooking() throws Exception {
-            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking());
+            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -244,11 +245,11 @@ class BookingSecurityTest {
         }
 
         @Test
-        @WithMockUser(username = "customer1", roles = "CUSTOMER")
+        @WithMockUser(username = CUSTOMER_ID, roles = "CUSTOMER")
         @DisplayName("should return 200 when customer views own bookings")
         void should_Return200_When_CustomerViewsOwnBookings() throws Exception {
             given(bookingService.getBookingsByCustomer(CUSTOMER_ID))
-                    .willReturn(List.of(stubBooking()));
+                    .willReturn(List.of(stubBooking(BOOKING_ID, CUSTOMER_ID)));
 
             mockMvc.perform(get(BOOKINGS_URL)
                             .param("customerId", CUSTOMER_ID)
@@ -258,26 +259,72 @@ class BookingSecurityTest {
         }
 
         @Test
-        @WithMockUser(username = "customer1", roles = "CUSTOMER")
+        @WithMockUser(username = CUSTOMER_ID, roles = "CUSTOMER")
         @DisplayName("should return 403 when customer views another customer's bookings")
         void should_Return403_When_CustomerViewsOtherCustomerBookings() throws Exception {
             mockMvc.perform(get(BOOKINGS_URL)
-                            .param("customerId", "other-customer-id")
+                            .param("customerId", OTHER_CUSTOMER_ID)
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @WithMockUser(roles = "CUSTOMER")
+        @WithMockUser(username = CUSTOMER_ID, roles = "CUSTOMER")
         @DisplayName("should return 200 when customer cancels a booking")
         void should_Return200_When_CustomerCancelsBooking() throws Exception {
+            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
             given(bookingService.cancelBooking(eq(BOOKING_ID), eq("Changed plans")))
-                    .willReturn(stubBooking());
+                    .willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"Changed plans\"}"))
                     .andExpect(status().isOk());
+        }
+
+        @Test
+        @WithMockUser(username = OTHER_CUSTOMER_ID, roles = "CUSTOMER")
+        @DisplayName("should return 403 when customer retrieves another customer's booking")
+        void should_Return403_When_CustomerRetrievesOtherCustomerBooking() throws Exception {
+            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
+
+            mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = OTHER_CUSTOMER_ID, roles = "CUSTOMER")
+        @DisplayName("should return 403 when customer cancels another customer's booking")
+        void should_Return403_When_CustomerCancelsOtherCustomerBooking() throws Exception {
+            given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
+
+            mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reason\":\"Changed plans\"}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = CUSTOMER_ID, roles = "CUSTOMER")
+        @DisplayName("should return 403 when customer creates booking for a different customerId")
+        void should_Return403_When_CustomerCreatesBookingForDifferentCustomer() throws Exception {
+            CreateBookingRequest request = new CreateBookingRequest(
+                    OTHER_CUSTOMER_ID,
+                    "CNSHA",
+                    "USLAX",
+                    "8471",
+                    "Electronics",
+                    new BigDecimal("5000"),
+                    ContainerType.DRY_20,
+                    2,
+                    LocalDate.now().plusDays(10)
+            );
+
+            mockMvc.perform(post(BOOKINGS_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden());
         }
     }
 
@@ -327,33 +374,58 @@ class BookingSecurityTest {
     /**
      * Creates a stub {@link Booking} for use in mock service responses.
      *
-     * <p>Uses reflection-free factory approach — invokes the domain's static factory
-     * method and returns a booking in DRAFT status with known test values.</p>
+     * <p>Uses aggregate reconstitution to create deterministic IDs and customer ownership
+     * in security-focused controller tests.</p>
      */
-    private Booking stubBooking() {
+    private Booking stubBooking(String bookingId, String customerId) {
         Cargo cargo = new Cargo(
                 "8471",
                 "Electronics",
-                Weight.ofKilograms(new java.math.BigDecimal("5000")),
+                Weight.ofKilograms(new BigDecimal("5000")),
                 ContainerType.DRY_20,
                 2,
                 PortCode.of("CNSHA"),
                 PortCode.of("USLAX")
         );
 
-        return Booking.create(
-                CustomerId.fromString(CUSTOMER_ID),
+        return Booking.reconstitute(
+                BookingId.fromString(bookingId),
+                CustomerId.fromString(customerId),
                 cargo,
-                LocalDate.now().plusDays(30)
+                LocalDate.now().plusDays(30),
+                BookingStatus.DRAFT,
+                null,
+                null,
+                Instant.now().minusSeconds(60),
+                Instant.now(),
+                0L
         );
     }
 
     /**
      * Creates a stub confirmed {@link Booking} for mock confirm responses.
      */
-    private Booking stubConfirmedBooking() {
-        Booking booking = stubBooking();
-        booking.confirm(com.freightflow.commons.domain.VoyageId.fromString(VOYAGE_ID));
-        return booking;
+    private Booking stubConfirmedBooking(String bookingId, String customerId) {
+        Cargo cargo = new Cargo(
+                "8471",
+                "Electronics",
+                Weight.ofKilograms(new BigDecimal("5000")),
+                ContainerType.DRY_20,
+                2,
+                PortCode.of("CNSHA"),
+                PortCode.of("USLAX")
+        );
+        return Booking.reconstitute(
+                BookingId.fromString(bookingId),
+                CustomerId.fromString(customerId),
+                cargo,
+                LocalDate.now().plusDays(30),
+                BookingStatus.CONFIRMED,
+                VoyageId.fromString(VOYAGE_ID),
+                null,
+                Instant.now().minusSeconds(120),
+                Instant.now(),
+                1L
+        );
     }
 }

@@ -49,7 +49,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-@ConditionalOnProperty(name = "freightflow.security.enabled", havingValue = "true", matchIfMissing = true)
 public class JwtAuthenticationConfig {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationConfig.class);
@@ -66,14 +65,19 @@ public class JwtAuthenticationConfig {
     };
 
     private final CorsConfig corsConfig;
+    private final SecurityHeadersConfig.SecurityHeadersCustomizer securityHeadersCustomizer;
 
     /**
      * Creates a new {@code JwtAuthenticationConfig} with the required CORS configuration.
      *
      * @param corsConfig the CORS configuration provider (must not be null)
+     * @param securityHeadersCustomizer reusable security headers customizer (must not be null)
      */
-    public JwtAuthenticationConfig(CorsConfig corsConfig) {
+    public JwtAuthenticationConfig(
+            CorsConfig corsConfig,
+            SecurityHeadersConfig.SecurityHeadersCustomizer securityHeadersCustomizer) {
         this.corsConfig = corsConfig;
+        this.securityHeadersCustomizer = securityHeadersCustomizer;
     }
 
     /**
@@ -94,6 +98,7 @@ public class JwtAuthenticationConfig {
      * @throws Exception if configuration fails
      */
     @Bean
+    @ConditionalOnProperty(name = "freightflow.security.enabled", havingValue = "true", matchIfMissing = true)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         log.info("Configuring JWT-based security filter chain for FreightFlow resource server");
 
@@ -105,7 +110,10 @@ public class JwtAuthenticationConfig {
                 .csrf(csrf -> csrf.disable())
 
                 // Frame options — DENY to prevent clickjacking
-                .headers(headers -> headers.frameOptions(frame -> frame.deny()))
+                .headers(headers -> {
+                    headers.frameOptions(frame -> frame.deny());
+                    securityHeadersCustomizer.configure(headers);
+                })
 
                 // Session management — stateless, no HTTP sessions
                 .sessionManagement(session ->
@@ -123,6 +131,31 @@ public class JwtAuthenticationConfig {
                 );
 
         log.info("JWT security filter chain configured — public paths: {}", (Object) PUBLIC_PATHS);
+
+        return http.build();
+    }
+
+    /**
+     * Builds a permissive filter chain for local development when security is disabled.
+     *
+     * <p>This mode is explicitly opt-in via {@code freightflow.security.enabled=false} and
+     * should never be used in production environments.</p>
+     *
+     * @param http the {@link HttpSecurity} builder
+     * @return a filter chain that permits all requests
+     * @throws Exception if configuration fails
+     */
+    @Bean
+    @ConditionalOnProperty(name = "freightflow.security.enabled", havingValue = "false")
+    public SecurityFilterChain localDevelopmentSecurityFilterChain(HttpSecurity http) throws Exception {
+        log.warn("FreightFlow security is DISABLED (freightflow.security.enabled=false). " +
+                "Using permissive local-development filter chain.");
+
+        http
+                .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .headers(securityHeadersCustomizer::configure)
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
 
         return http.build();
     }

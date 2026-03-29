@@ -11,7 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,9 +75,12 @@ public class BookingController {
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'CUSTOMER')")
     @PostMapping
-    public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody CreateBookingRequest request) {
+    public ResponseEntity<BookingResponse> createBooking(
+            @Valid @RequestBody CreateBookingRequest request,
+            Authentication authentication) {
         log.debug("POST /api/v1/bookings — creating booking: customerId={}, route={}→{}",
                 request.customerId(), request.origin(), request.destination());
+        enforceCustomerSelfScope(authentication, request.customerId(), "create booking");
 
         Booking booking = bookingService.createBooking(request.toCommand());
         BookingResponse response = BookingResponse.from(booking);
@@ -93,10 +99,13 @@ public class BookingController {
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'CUSTOMER')")
     @GetMapping("/{bookingId}")
-    public ResponseEntity<BookingResponse> getBooking(@PathVariable String bookingId) {
+    public ResponseEntity<BookingResponse> getBooking(
+            @PathVariable String bookingId,
+            Authentication authentication) {
         log.debug("GET /api/v1/bookings/{} — fetching booking", bookingId);
 
         Booking booking = bookingService.getBooking(bookingId);
+        enforceCustomerSelfScope(authentication, booking.getCustomerId().asString(), "retrieve booking");
         BookingResponse response = BookingResponse.from(booking);
 
         log.info("Booking retrieved: bookingId={}, status={}", response.bookingId(), response.status());
@@ -145,10 +154,14 @@ public class BookingController {
     @DeleteMapping("/{bookingId}")
     public ResponseEntity<BookingResponse> cancelBooking(
             @PathVariable String bookingId,
-            @Valid @RequestBody CancelBookingRequest request) {
+            @Valid @RequestBody CancelBookingRequest request,
+            Authentication authentication) {
 
         log.debug("DELETE /api/v1/bookings/{} — cancelling with reason='{}'",
                 bookingId, request.reason());
+
+        Booking existing = bookingService.getBooking(bookingId);
+        enforceCustomerSelfScope(authentication, existing.getCustomerId().asString(), "cancel booking");
 
         Booking booking = bookingService.cancelBooking(bookingId, request.reason());
         BookingResponse response = BookingResponse.from(booking);
@@ -164,12 +177,14 @@ public class BookingController {
      * @param customerId the customer UUID (query parameter)
      * @return 200 OK with a list of bookings (may be empty)
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR') or #customerId == authentication.name")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'CUSTOMER')")
     @GetMapping
     public ResponseEntity<List<BookingResponse>> getBookingsByCustomer(
-            @RequestParam String customerId) {
+            @RequestParam String customerId,
+            Authentication authentication) {
 
         log.debug("GET /api/v1/bookings?customerId={} — listing customer bookings", customerId);
+        enforceCustomerSelfScope(authentication, customerId, "list bookings");
 
         List<BookingResponse> responses = bookingService.getBookingsByCustomer(customerId)
                 .stream()
@@ -179,5 +194,44 @@ public class BookingController {
         log.info("Retrieved {} bookings for customerId={}", responses.size(), customerId);
 
         return ResponseEntity.ok(responses);
+    }
+
+    private void enforceCustomerSelfScope(
+            Authentication authentication,
+            String targetCustomerId,
+            String action) {
+        if (authentication == null || isAdminOrOperator(authentication)) {
+            return;
+        }
+        if (!hasRole(authentication, "CUSTOMER")) {
+            return;
+        }
+
+        String principalCustomerId = resolvePrincipalCustomerId(authentication);
+        if (!targetCustomerId.equals(principalCustomerId)) {
+            log.warn("Access denied for action='{}': principal='{}' attempted customerId='{}'",
+                    action, principalCustomerId, targetCustomerId);
+            throw new AccessDeniedException("Customers can only access their own bookings");
+        }
+    }
+
+    private boolean isAdminOrOperator(Authentication authentication) {
+        return hasRole(authentication, "ADMIN") || hasRole(authentication, "OPERATOR");
+    }
+
+    private boolean hasRole(Authentication authentication, String role) {
+        String authority = "ROLE_" + role;
+        return authentication.getAuthorities().stream()
+                .anyMatch(granted -> authority.equals(granted.getAuthority()));
+    }
+
+    private String resolvePrincipalCustomerId(Authentication authentication) {
+        if (authentication instanceof JwtAuthenticationToken jwtAuthenticationToken) {
+            String subject = jwtAuthenticationToken.getToken().getSubject();
+            if (subject != null && !subject.isBlank()) {
+                return subject;
+            }
+        }
+        return authentication.getName();
     }
 }
