@@ -248,6 +248,100 @@ services:
     networks:
       - freightflow-network
 
+  # ---------------------------------------------------------------------------
+  # Prometheus — Metrics collection and alerting
+  # ---------------------------------------------------------------------------
+  # Scrapes /actuator/prometheus from all FreightFlow microservices every 15s.
+  # Stores time-series data with 30-day retention.
+  # Evaluates alerting rules defined in alerts.yml.
+  #
+  # Access at: http://localhost:9090
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: freightflow-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - freightflow-network
+
+  # ---------------------------------------------------------------------------
+  # Grafana — Metrics visualization and dashboards
+  # ---------------------------------------------------------------------------
+  # Auto-provisions Prometheus datasource and FreightFlow dashboards on startup.
+  # Dashboards are loaded from JSON files in the dashboards volume mount.
+  #
+  # Default credentials: admin/admin
+  # Access at: http://localhost:3000
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: freightflow-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - freightflow-network
+
+  # ---------------------------------------------------------------------------
+  # Jaeger — Distributed tracing backend
+  # ---------------------------------------------------------------------------
+  # Receives traces via OTLP (gRPC on 4317, HTTP on 4318) from all services.
+  # Provides a UI for searching and visualizing distributed traces across
+  # the entire HTTP → Kafka → consumer chain.
+  #
+  # Access Jaeger UI at: http://localhost:16686
+  # ---------------------------------------------------------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: freightflow-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - freightflow-network
+
 # =============================================================================
 # Named Volumes — persistent data across container restarts
 # =============================================================================
@@ -259,6 +353,10 @@ volumes:
   redis-data:
     driver: local
   pgadmin-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
     driver: local
 
 # =============================================================================
