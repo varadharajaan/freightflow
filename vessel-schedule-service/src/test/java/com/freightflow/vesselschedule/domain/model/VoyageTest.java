@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class VoyageTest {
@@ -26,7 +26,7 @@ class VoyageTest {
 
         voyage.reserveCapacity(UUID.randomUUID(), 25);
 
-        assertEquals(75, voyage.getRemainingCapacityTeu());
+        assertThat(voyage.getRemainingCapacityTeu()).isEqualTo(75);
     }
 
     @Test
