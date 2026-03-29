@@ -7,28 +7,31 @@ They communicate via **events (Kafka)** for async operations and **REST/gRPC**
 for synchronous queries. No service directly accesses another service's database.
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                          FreightFlow Platform                                │
-│                                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐     │
-│  │  Booking    │  │  Tracking   │  │  Billing    │  │ Vessel Schedule  │     │
-│  │  Context    │  │  Context    │  │  Context    │  │ Context          │     │
-│  │             │  │             │  │             │  │                  │     │
-│  │ • Booking   │  │ • Container │  │ • Invoice   │  │ • Vessel         │     │
-│  │ • Cargo     │  │ • Movement  │  │ • Payment   │  │ • Voyage         │     │
-│  │ • Quote     │  │ • Position  │  │ • Ledger    │  │ • Route          │     │
-│  │ • Document  │  │ • Milestone │  │ • CreditNote│  │ • Schedule       │     │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └────────┬─────────┘     │
-│         │                │                │                  │               │
-│  ┌──────┴──────┐  ┌──────┴──────┐                                            │
-│  │  Customer   │  │Notification │                                            │
-│  │  Context    │  │  Context    │                                            │
-│  │             │  │             │                                            │ 
-│  │ • Customer  │  │ • Template  │                                            │
-│  │ • Contract  │  │ • Channel   │                                            │
-│  │ • Role      │  │ • Delivery  │                                            │
-│  └─────────────┘  └─────────────┘                                            │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                              FreightFlow Platform                                  │
+│                                                                                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐       │
+│  │  Booking     │  │  Tracking    │  │  Billing     │  │ Vessel Schedule   │       │
+│  │  Context     │  │  Context     │  │  Context     │  │ Context           │       │
+│  │              │  │              │  │              │  │                   │       │
+│  │ • Booking    │  │ • Container  │  │ • Invoice    │  │ • Vessel          │       │
+│  │ • Cargo      │  │ • Movement   │  │ • Payment    │  │ • Voyage          │       │
+│  │ • Quote      │  │ • Position   │  │ • Ledger     │  │ • Route           │       │
+│  │ • Document   │  │ • Milestone  │  │ • CreditNote │  │ • Schedule        │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └───────────────────┘       │
+│                                                                                    │
+│  ┌──────────────┐  ┌──────────────┐                                                │
+│  │  Customer    │  │ Notification │                                                │
+│  │  Context     │  │  Context     │                                                │
+│  │              │  │              │                                                │
+│  │ • Customer   │  │ • Template   │                                                │
+│  │ • Contract   │  │ • Channel    │                                                │
+│  │ • Role       │  │ • Delivery   │                                                │
+│  └──────────────┘  └──────────────┘                                                │
+│                                                                                    │
+│  All 6 contexts are equal peers. Layout is for readability only — no hierarchy.     │
+│  Communication: Kafka events (async) + REST/gRPC (sync via API Gateway + Eureka).  │
+└────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
