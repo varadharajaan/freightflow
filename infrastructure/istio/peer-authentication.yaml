@@ -1,0 +1,19 @@
+# =============================================================================
+# FreightFlow — Istio PeerAuthentication (Strict mTLS)
+# =============================================================================
+# Enforces mutual TLS for ALL pod-to-pod traffic in the freightflow namespace.
+# Every sidecar proxy encrypts traffic automatically — no application changes.
+#
+# This means:
+#   - booking-service -> customer-service: encrypted via mTLS
+#   - api-gateway -> any service: encrypted via mTLS
+#   - External traffic must enter through the Istio Gateway
+# =============================================================================
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: freightflow-strict-mtls
+  namespace: freightflow
+spec:
+  mtls:
+    mode: STRICT

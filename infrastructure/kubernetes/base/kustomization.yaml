@@ -1,0 +1,27 @@
+# =============================================================================
+# FreightFlow — Kustomize Base Configuration
+# =============================================================================
+# Aggregates all Kubernetes resources for the FreightFlow platform.
+# Apply with: kubectl apply -k infrastructure/kubernetes/base/
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: freightflow
+
+resources:
+  - namespace.yaml
+  - config-server.yaml
+  - discovery-server.yaml
+  - api-gateway.yaml
+  - booking-service.yaml
+  - tracking-service.yaml
+  - billing-service.yaml
+  - vessel-schedule-service.yaml
+  - customer-service.yaml
+  - notification-service.yaml
+  - network-policy.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/version: "0.1.0"

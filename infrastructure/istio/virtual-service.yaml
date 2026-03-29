@@ -1,0 +1,66 @@
+# =============================================================================
+# FreightFlow — Istio VirtualService
+# =============================================================================
+# Routes external traffic from the Istio Gateway to the api-gateway service.
+# Includes canary deployment configuration (90/10 traffic splitting).
+# =============================================================================
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: freightflow-api
+  namespace: freightflow
+spec:
+  hosts:
+    - "freightflow.example.com"
+  gateways:
+    - freightflow-gateway
+  http:
+    # --- API traffic → api-gateway (with canary split) ---
+    - match:
+        - uri:
+            prefix: /api
+      route:
+        - destination:
+            host: api-gateway
+            port:
+              number: 8080
+            subset: stable
+          weight: 90
+        - destination:
+            host: api-gateway
+            port:
+              number: 8080
+            subset: canary
+          weight: 10
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+        retryOn: "5xx,reset,connect-failure,retriable-4xx"
+
+    # --- Health check endpoint (no canary split) ---
+    - match:
+        - uri:
+            prefix: /actuator/health
+      route:
+        - destination:
+            host: api-gateway
+            port:
+              number: 8080
+
+    # --- Swagger UI ---
+    - match:
+        - uri:
+            prefix: /swagger-ui
+      route:
+        - destination:
+            host: api-gateway
+            port:
+              number: 8080
+
+    # --- Default: route everything else to api-gateway ---
+    - route:
+        - destination:
+            host: api-gateway
+            port:
+              number: 8080

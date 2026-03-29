@@ -1,0 +1,102 @@
+# =============================================================================
+# FreightFlow — Network Policies
+# =============================================================================
+# Restricts traffic to only allowed communication paths within the cluster.
+# =============================================================================
+
+# --- Default deny all ingress traffic in freightflow namespace ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: freightflow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# --- Allow traffic between all freightflow services ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-freightflow-internal
+  namespace: freightflow
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: freightflow
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow traffic from within the freightflow namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: freightflow
+---
+# --- Allow ingress from api-gateway to all services ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-gateway-ingress
+  namespace: freightflow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway
+---
+# --- Allow Prometheus scraping from monitoring namespace ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: freightflow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8081
+        - protocol: TCP
+          port: 8082
+        - protocol: TCP
+          port: 8083
+        - protocol: TCP
+          port: 8084
+        - protocol: TCP
+          port: 8085
+        - protocol: TCP
+          port: 8086
+        - protocol: TCP
+          port: 8761
+        - protocol: TCP
+          port: 8888
+---
+# --- Allow Istio control plane traffic ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-istio-control-plane
+  namespace: freightflow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system

@@ -53,14 +53,17 @@ public class JwtAuthenticationConfig {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationConfig.class);
 
-    /** Paths that are accessible without authentication. */
+    /** Paths that are accessible without authentication.
+     *
+     * <p>Only endpoints needed by external systems (Prometheus, load balancer)
+     * are public. /actuator/metrics is intentionally NOT public — it leaks
+     * internal metric names. Prometheus uses /actuator/prometheus exclusively.</p>
+     */
     private static final String[] PUBLIC_PATHS = {
             "/actuator/health",
             "/actuator/health/**",
             "/actuator/info",
             "/actuator/prometheus",
-            "/actuator/metrics",
-            "/actuator/metrics/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**",

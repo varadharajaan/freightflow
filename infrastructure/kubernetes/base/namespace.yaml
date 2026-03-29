@@ -1,0 +1,10 @@
+# =============================================================================
+# FreightFlow — Kubernetes Namespace
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: freightflow
+  labels:
+    app.kubernetes.io/part-of: freightflow
+    istio-injection: enabled

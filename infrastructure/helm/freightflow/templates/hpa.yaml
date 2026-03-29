@@ -1,0 +1,38 @@
+{{/*
+=============================================================================
+FreightFlow — Helm HPA Template
+=============================================================================
+Generates a HorizontalPodAutoscaler for each service that has HPA enabled.
+=============================================================================
+*/}}
+{{- range $name, $svc := .Values.services }}
+{{- if and $svc.enabled $svc.hpa }}
+{{- if $svc.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $name }}-hpa
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: {{ $name }}
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/part-of: freightflow
+    app.kubernetes.io/managed-by: helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $name }}
+  minReplicas: {{ $svc.hpa.minReplicas }}
+  maxReplicas: {{ $svc.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $svc.hpa.cpuUtilization }}
+{{- end }}
+{{- end }}
+{{- end }}

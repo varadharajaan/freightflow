@@ -1,0 +1,36 @@
+# =============================================================================
+# FreightFlow — Istio Gateway
+# =============================================================================
+# Entry point for all external traffic into the FreightFlow service mesh.
+# Accepts HTTP (80) and HTTPS (443) traffic and routes it to the
+# api-gateway VirtualService.
+# =============================================================================
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: freightflow-gateway
+  namespace: freightflow
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "freightflow.example.com"
+        - "*.freightflow.example.com"
+      # Redirect HTTP to HTTPS in production
+      # tls:
+      #   httpsRedirect: true
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      hosts:
+        - "freightflow.example.com"
+        - "*.freightflow.example.com"
+      tls:
+        mode: SIMPLE
+        credentialName: freightflow-tls-credential

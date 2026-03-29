@@ -1,0 +1,219 @@
+# =============================================================================
+# FreightFlow — Helm Chart Values
+# =============================================================================
+# Global and per-service configuration values.
+# Override per environment with: helm install -f values-prod.yaml
+# =============================================================================
+
+# --- Global Settings ---
+global:
+  namespace: freightflow
+  imageRegistry: ghcr.io/varadharajaan/freightflow
+  imageTag: latest
+  imagePullPolicy: IfNotPresent
+  serviceAccountName: freightflow
+
+# --- Infrastructure Dependencies ---
+kafka:
+  bootstrapServers: "kafka:9092"
+
+keycloak:
+  issuerUri: "http://keycloak:8080/realms/freightflow"
+
+tracing:
+  endpoint: "http://jaeger-collector:4318/v1/traces"
+
+configServer:
+  url: "http://config:config@config-server:8888"
+
+# --- Service Definitions ---
+# Each service has: enabled, replicas, port, resources, env overrides
+services:
+  api-gateway:
+    enabled: true
+    replicas: 2
+    port: 8080
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpuUtilization: 70
+    database:
+      enabled: false
+
+  booking-service:
+    enabled: true
+    replicas: 2
+    port: 8081
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpuUtilization: 70
+    database:
+      enabled: true
+      secretName: booking-db-credentials
+
+  tracking-service:
+    enabled: true
+    replicas: 2
+    port: 8082
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpuUtilization: 70
+    database:
+      enabled: true
+      secretName: tracking-db-credentials
+
+  billing-service:
+    enabled: true
+    replicas: 2
+    port: 8083
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpuUtilization: 70
+    database:
+      enabled: true
+      secretName: billing-db-credentials
+
+  vessel-schedule-service:
+    enabled: true
+    replicas: 2
+    port: 8084
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpuUtilization: 70
+    database:
+      enabled: true
+      secretName: vessel-db-credentials
+
+  customer-service:
+    enabled: true
+    replicas: 2
+    port: 8085
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpuUtilization: 70
+    database:
+      enabled: true
+      secretName: customer-db-credentials
+
+  notification-service:
+    enabled: true
+    replicas: 2
+    port: 8086
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpuUtilization: 70
+    database:
+      enabled: true
+      secretName: notification-db-credentials
+
+  discovery-server:
+    enabled: true
+    replicas: 1
+    port: 8761
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "768Mi"
+    hpa:
+      enabled: false
+    database:
+      enabled: false
+
+  config-server:
+    enabled: true
+    replicas: 1
+    port: 8888
+    springProfile: prod
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "768Mi"
+    hpa:
+      enabled: false
+    database:
+      enabled: false
+
+# --- Ingress Settings ---
+ingress:
+  enabled: true
+  className: nginx
+  host: freightflow.example.com
+  tls:
+    enabled: false
+    secretName: freightflow-tls

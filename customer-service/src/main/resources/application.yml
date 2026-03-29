@@ -118,6 +118,12 @@ management:
 # =============================================================================
 # Logging — delegates to logback-spring.xml for full configuration
 # =============================================================================
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
 logging:
   level:
     root: INFO
@@ -129,6 +135,8 @@ logging:
 # FreightFlow Custom Properties
 # =============================================================================
 freightflow:
+  tracing:
+    enabled: ${TRACING_ENABLED:true}
   kafka:
     partitions: 12
     replication-factor: 1
@@ -145,15 +153,3 @@ eureka:
     instance-id: ${spring.application.name}:${random.value}
 
 
-# --- Observability: Distributed Tracing ---
-management:
-  tracing:
-    sampling:
-      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
-  otlp:
-    tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
-
-freightflow:
-  tracing:
-    enabled: ${TRACING_ENABLED:true}

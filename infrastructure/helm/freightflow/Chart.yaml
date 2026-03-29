@@ -1,0 +1,22 @@
+# =============================================================================
+# FreightFlow — Helm Chart Metadata
+# =============================================================================
+apiVersion: v2
+name: freightflow
+description: Helm chart for the FreightFlow shipping logistics platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: Varadharajaan Damotharan
+    url: https://github.com/varadharajaan
+keywords:
+  - freightflow
+  - microservices
+  - shipping
+  - logistics
+  - spring-boot
+  - kubernetes
+home: https://github.com/varadharajaan/freightflow
+sources:
+  - https://github.com/varadharajaan/freightflow
