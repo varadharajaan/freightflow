@@ -44,11 +44,13 @@ Customer                API Gateway           Booking Service        Billing Ser
 
 ---
 
-## Current Implementation (In-Process Event Flow)
+## Current Implementation (Kafka + Outbox Pattern)
 
-> **Note:** The target architecture uses Apache Kafka for inter-service events.
-> The current implementation uses Spring ApplicationEvent for in-process event flow
-> within the booking-service. Kafka integration is tracked in Issue #7.
+> **Status:** Kafka messaging is implemented (Issue #7 closed). The Outbox Pattern
+> provides transactional event publishing — events are written to the outbox table
+> in the same ACID transaction as the aggregate, then polled and published to Kafka
+> by the OutboxProcessor. Booking-service uses KafkaBookingEventPublisher for direct
+> Kafka publishing; vessel-schedule-service uses the full Outbox pattern as reference.
 
 ### Current Event Flow (Single Service)
 
@@ -161,7 +163,9 @@ notification-service-group -> booking.events, billing.events, tracking.events
 
 ## Outbox Pattern (Transactional Messaging)
 
-> **Status:** Planned — not yet implemented. See Issue #7 (Kafka) and ADR-010 (Outbox Pattern).
+> **Status:** ✅ Implemented in booking-service (V4 migration, OutboxEventPublisher, OutboxProcessor)
+> and vessel-schedule-service (V2 migration, OutboxDomainEventPublisher, ScheduledOutboxDispatcher).
+> See ADR-010 for design rationale. Debezium CDC can replace the polling publisher in production.
 
 To ensure exactly-once delivery between the database and Kafka:
 

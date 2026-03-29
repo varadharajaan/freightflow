@@ -16,8 +16,8 @@
 | 4 | **Booking History / Event Store** | ✅ Completed (Issue #6 closed) — Fully implemented: EventStore port, JpaEventStoreAdapter, BookingProjectionUpdater, BookingQueryHandler.getBookingHistory(), Flyway V3 | T3 (CQRS + ES) | ✅ Closed |
 | 5 | **HATEOAS Links** | Not on responses yet | T8 (API Gateway) | #12 |
 | 6 | **Pagination** | List endpoint returns all bookings (no cursor) | T25 (API Design) | #14 |
-| 7 | **Authentication/Authorization** | No security on endpoints yet | T9 (Security) | #15 |
-| 8 | **Rate Limiting** | Not implemented on API Gateway | T6 (Resilience) | #9 |
+| 7 | **Authentication/Authorization** | ✅ Completed (Issue #15 closed) — OAuth2/OIDC with Keycloak, JWT validation, RBAC (4 roles), method-level @PreAuthorize, IDOR ownership enforcement, security headers (CSP/HSTS), CORS | T9 (Security) | ✅ Closed |
+| 8 | **Rate Limiting** | ✅ Completed (Issue #9 closed) — Bucket4j Token Bucket (100 req/min), RFC 6585 headers, RateLimitingFilter | T6 (Resilience) | ✅ Closed |
 | 9 | **Idempotency Key** | Header not checked on POST | T25 (API Design) | #14 |
 | 10 | **ETag / Conditional Requests** | Not implemented | T25 (API Design) | #14 |
 | 11 | **Bill of Lading Generation** | Not started | New feature | TBD |
