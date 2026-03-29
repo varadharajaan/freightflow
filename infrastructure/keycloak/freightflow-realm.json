@@ -1,0 +1,414 @@
+{
+  "realm": "freightflow",
+  "enabled": true,
+  "displayName": "FreightFlow Platform",
+  "displayNameHtml": "<strong>FreightFlow</strong> Platform",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+
+  "roles": {
+    "realm": [
+      {
+        "name": "ROLE_ADMIN",
+        "description": "Full system access — manage all bookings, users, vessels, billing, and system configuration.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "ROLE_OPERATOR",
+        "description": "Operational access — manage bookings, vessels, tracking, and day-to-day logistics operations.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "ROLE_CUSTOMER",
+        "description": "Customer access — view and manage own bookings, limited read-only access to schedules.",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "ROLE_FINANCE",
+        "description": "Finance access — manage billing, invoices, payments, and financial reporting.",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+
+  "defaultRoles": [],
+
+  "clients": [
+    {
+      "clientId": "freightflow-api",
+      "name": "FreightFlow API Client",
+      "description": "Confidential client for backend service-to-service communication and server-side applications.",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "freightflow-api-secret",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:8081/*",
+        "http://localhost:8082/*",
+        "http://localhost:8083/*",
+        "http://localhost:8084/*",
+        "http://localhost:8085/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:8082",
+        "http://localhost:8083",
+        "http://localhost:8084",
+        "http://localhost:8085"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ],
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client.session.idle.timeout": "1800",
+        "client.session.max.lifespan": "3600"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.${client_id}.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "freightflow-gateway",
+      "name": "FreightFlow Gateway Client",
+      "description": "Public client for SPA and mobile applications that authenticate via the API Gateway.",
+      "enabled": true,
+      "publicClient": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:8080"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ],
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client.session.idle.timeout": "1800",
+        "client.session.max.lifespan": "3600",
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+
+  "clientScopes": [
+    {
+      "name": "openid",
+      "description": "OpenID Connect scope",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      }
+    },
+    {
+      "name": "profile",
+      "description": "OpenID Connect built-in scope: profile",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "full-name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "userinfo.token.claim": "true",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "name": "email",
+      "description": "OpenID Connect built-in scope: email",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "userinfo.token.claim": "true",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email-verified",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "emailVerified",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email_verified",
+            "userinfo.token.claim": "true",
+            "jsonType.label": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "name": "roles",
+      "description": "OpenID Connect scope for role mappings",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "true",
+        "consent.screen.text": "User roles"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "user.attribute": "foo",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "user.attribute": "foo",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.${client_id}.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+
+  "defaultDefaultClientScopes": [
+    "openid",
+    "profile",
+    "email",
+    "roles"
+  ],
+
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "System",
+      "lastName": "Administrator",
+      "email": "admin@freightflow.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ROLE_ADMIN"
+      ]
+    },
+    {
+      "username": "operator",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Operations",
+      "lastName": "Manager",
+      "email": "operator@freightflow.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "operator123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ROLE_OPERATOR"
+      ]
+    },
+    {
+      "username": "customer1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Jane",
+      "lastName": "Shipper",
+      "email": "customer1@freightflow.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "customer123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ROLE_CUSTOMER"
+      ]
+    },
+    {
+      "username": "finance",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Finance",
+      "lastName": "Analyst",
+      "email": "finance@freightflow.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "finance123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ROLE_FINANCE"
+      ]
+    }
+  ],
+
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "actionTokenGeneratedByAdminLifespan": 43200,
+  "actionTokenGeneratedByUserLifespan": 300,
+
+  "smtpServer": {},
+
+  "eventsEnabled": true,
+  "eventsListeners": [
+    "jboss-logging"
+  ],
+  "enabledEventTypes": [
+    "LOGIN",
+    "LOGIN_ERROR",
+    "LOGOUT",
+    "REGISTER",
+    "CODE_TO_TOKEN",
+    "CODE_TO_TOKEN_ERROR",
+    "CLIENT_LOGIN",
+    "CLIENT_LOGIN_ERROR"
+  ],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+
+  "internationalizationEnabled": false,
+  "supportedLocales": [],
+  "defaultLocale": "en",
+
+  "browserFlow": "browser",
+  "registrationFlow": "registration",
+  "directGrantFlow": "direct grant",
+  "resetCredentialsFlow": "reset credentials",
+  "clientAuthenticationFlow": "clients"
+}
