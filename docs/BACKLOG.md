@@ -18,7 +18,7 @@
 | 6 | **Pagination** | List endpoint returns all bookings (no cursor) | T25 (API Design) | #14 |
 | 7 | **Authentication/Authorization** | ✅ Completed (Issue #15 closed) — OAuth2/OIDC with Keycloak, JWT validation, RBAC (4 roles), method-level @PreAuthorize, IDOR ownership enforcement, security headers (CSP/HSTS), CORS | T9 (Security) | ✅ Closed |
 | 8 | **Rate Limiting** | ✅ Completed (Issue #9 closed) — Bucket4j Token Bucket (100 req/min), RFC 6585 headers, RateLimitingFilter | T6 (Resilience) | ✅ Closed |
-| 9 | **Idempotency Key** | Header not checked on POST | T25 (API Design) | #14 |
+| 9 | **Idempotency Key** | ✅ Partially implemented — enforced on Saga endpoint (Idempotency-Key header + UNIQUE DB constraint). Standard POST endpoints pending | T25 (API Design) / T10 (Saga) | #14 / ✅ #16 Closed |
 | 10 | **ETag / Conditional Requests** | Not implemented | T25 (API Design) | #14 |
 | 11 | **Bill of Lading Generation** | Not started | New feature | TBD |
 | 12 | **Container Allocation** | Booking doesn't allocate specific containers | New feature | TBD |

@@ -176,6 +176,7 @@ docker-compose -f infrastructure/docker/docker-compose.yml up -d
 | [Event Flow](docs/architecture/EVENT_FLOW.md) | Kafka topics, event sequences, outbox pattern |
 | [Engineering Baseline](docs/architecture/ENGINEERING_BASELINE.md) | Architecture enforcement, quality gates, test baseline |
 | [Cache Contract](docs/architecture/CACHE_CONTRACT.md) | Per-command cache invalidation rules |
+| [Saga Orchestration](docs/architecture/SAGA_ORCHESTRATION.md) | Distributed transaction with compensation |
 | [API Design Guide](docs/api/API_DESIGN_GUIDE.md) | REST conventions, error handling, pagination |
 | [Caching Strategy](docs/caching/CACHING_STRATEGY.md) | L1/L2/L3 caching, stampede prevention |
 | [Operational Runbooks](docs/runbooks/OPERATIONAL_RUNBOOKS.md) | Incident response procedures |
