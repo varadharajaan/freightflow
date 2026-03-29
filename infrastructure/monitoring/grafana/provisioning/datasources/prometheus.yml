@@ -1,0 +1,19 @@
+# =============================================================================
+# Grafana Datasource Provisioning — Prometheus
+# =============================================================================
+# Auto-provisions Prometheus as the default datasource on Grafana startup.
+# No manual configuration required after docker compose up.
+# =============================================================================
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      httpMethod: POST

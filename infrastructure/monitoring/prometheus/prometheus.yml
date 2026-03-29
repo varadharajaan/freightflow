@@ -1,0 +1,93 @@
+# =============================================================================
+# FreightFlow Prometheus Configuration
+# =============================================================================
+# Scrapes metrics from all FreightFlow microservices via Spring Boot Actuator.
+# Each service exposes /actuator/prometheus (Micrometer Prometheus registry).
+#
+# Scrape interval: 15s (default for near-real-time dashboards)
+# Evaluation interval: 15s (how often alerting rules are evaluated)
+# Retention: configured via --storage.tsdb.retention.time flag (30d in Docker)
+#
+# Adding a new service:
+#   1. Add a new job under scrape_configs
+#   2. Set metrics_path to /actuator/prometheus
+#   3. Set target to <service-name>:<port> (Docker network DNS)
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # ---------------------------------------------------------------------------
+  # API Gateway — entry point for all external traffic
+  # ---------------------------------------------------------------------------
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['api-gateway:8080']
+        labels:
+          service: 'api-gateway'
+
+  # ---------------------------------------------------------------------------
+  # Booking Service — booking aggregate management
+  # ---------------------------------------------------------------------------
+  - job_name: 'booking-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['booking-service:8081']
+        labels:
+          service: 'booking-service'
+
+  # ---------------------------------------------------------------------------
+  # Tracking Service — shipment tracking and location updates
+  # ---------------------------------------------------------------------------
+  - job_name: 'tracking-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['tracking-service:8082']
+        labels:
+          service: 'tracking-service'
+
+  # ---------------------------------------------------------------------------
+  # Billing Service — invoicing and payment processing
+  # ---------------------------------------------------------------------------
+  - job_name: 'billing-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['billing-service:8083']
+        labels:
+          service: 'billing-service'
+
+  # ---------------------------------------------------------------------------
+  # Vessel Schedule Service — vessel routes and schedules
+  # ---------------------------------------------------------------------------
+  - job_name: 'vessel-schedule-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['vessel-schedule-service:8084']
+        labels:
+          service: 'vessel-schedule-service'
+
+  # ---------------------------------------------------------------------------
+  # Customer Service — customer profile management
+  # ---------------------------------------------------------------------------
+  - job_name: 'customer-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['customer-service:8085']
+        labels:
+          service: 'customer-service'
+
+  # ---------------------------------------------------------------------------
+  # Notification Service — email, SMS, and push notifications
+  # ---------------------------------------------------------------------------
+  - job_name: 'notification-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['notification-service:8086']
+        labels:
+          service: 'notification-service'

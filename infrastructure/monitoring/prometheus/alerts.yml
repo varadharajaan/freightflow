@@ -1,0 +1,166 @@
+# =============================================================================
+# FreightFlow Prometheus Alerting Rules
+# =============================================================================
+# Defines alerts for service health, performance, Kafka, resilience, and
+# business KPI anomalies. Each alert includes severity labels and descriptive
+# annotations for integration with Alertmanager / PagerDuty / Slack.
+#
+# Severity levels:
+#   critical — immediate action required (service down, data loss risk)
+#   warning  — investigate soon (degraded performance, approaching limits)
+# =============================================================================
+
+groups:
+  # ===========================================================================
+  # Service Health Alerts
+  # ===========================================================================
+  - name: service_health
+    rules:
+      # -----------------------------------------------------------------------
+      # ServiceDown — instance unreachable for > 1 minute
+      # -----------------------------------------------------------------------
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Instance {{ $labels.instance }} of service {{ $labels.job }} has been unreachable for more than 1 minute. Prometheus scrape target is returning up=0."
+
+  # ===========================================================================
+  # HTTP Traffic Alerts
+  # ===========================================================================
+  - name: http_traffic
+    rules:
+      # -----------------------------------------------------------------------
+      # HighErrorRate — HTTP 5xx rate exceeds 5% for 5 minutes
+      # -----------------------------------------------------------------------
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum by (job) (rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+            /
+            sum by (job) (rate(http_server_requests_seconds_count[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP 5xx error rate on {{ $labels.job }}"
+          description: "Service {{ $labels.job }} is returning more than 5% server errors (HTTP 5xx) over the last 5 minutes. Current error rate: {{ $value | humanizePercentage }}."
+
+      # -----------------------------------------------------------------------
+      # HighLatency — p99 response time exceeds 2 seconds for 5 minutes
+      # -----------------------------------------------------------------------
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99,
+            sum by (job, le) (rate(http_server_requests_seconds_bucket[5m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p99 latency on {{ $labels.job }}"
+          description: "Service {{ $labels.job }} p99 response time has exceeded 2 seconds for more than 5 minutes. Current p99: {{ $value | humanizeDuration }}."
+
+  # ===========================================================================
+  # Kafka Alerts
+  # ===========================================================================
+  - name: kafka
+    rules:
+      # -----------------------------------------------------------------------
+      # HighKafkaConsumerLag — consumer lag exceeds 10,000 for 10 minutes
+      # -----------------------------------------------------------------------
+      - alert: HighKafkaConsumerLag
+        expr: |
+          sum by (job) (kafka_consumer_fetch_manager_records_lag_max) > 10000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Kafka consumer lag on {{ $labels.job }}"
+          description: "Service {{ $labels.job }} Kafka consumer lag has exceeded 10,000 records for more than 10 minutes. Current lag: {{ $value }}. Consumers may be unable to keep up with producers."
+
+  # ===========================================================================
+  # Resilience Alerts
+  # ===========================================================================
+  - name: resilience
+    rules:
+      # -----------------------------------------------------------------------
+      # CircuitBreakerOpen — circuit breaker in OPEN state for > 2 minutes
+      # -----------------------------------------------------------------------
+      - alert: CircuitBreakerOpen
+        expr: |
+          resilience4j_circuitbreaker_state{state="open"} == 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit breaker OPEN on {{ $labels.job }} — {{ $labels.name }}"
+          description: "Circuit breaker '{{ $labels.name }}' on service {{ $labels.job }} has been in OPEN state for more than 2 minutes. Downstream dependency is likely failing. Instance: {{ $labels.instance }}."
+
+  # ===========================================================================
+  # Cache Alerts
+  # ===========================================================================
+  - name: cache
+    rules:
+      # -----------------------------------------------------------------------
+      # LowCacheHitRatio — cache hit ratio below 70% for 10 minutes
+      # -----------------------------------------------------------------------
+      - alert: LowCacheHitRatio
+        expr: |
+          (
+            sum by (job, cache) (rate(cache_gets_total{result="hit"}[10m]))
+            /
+            sum by (job, cache) (rate(cache_gets_total[10m]))
+          ) < 0.7
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit ratio for {{ $labels.cache }} on {{ $labels.job }}"
+          description: "Cache '{{ $labels.cache }}' on service {{ $labels.job }} has a hit ratio below 70% for more than 10 minutes. Current ratio: {{ $value | humanizePercentage }}. Consider adjusting cache TTL or capacity."
+
+  # ===========================================================================
+  # JVM Alerts
+  # ===========================================================================
+  - name: jvm
+    rules:
+      # -----------------------------------------------------------------------
+      # HighJvmMemory — JVM heap usage exceeds 85% for 5 minutes
+      # -----------------------------------------------------------------------
+      - alert: HighJvmMemory
+        expr: |
+          (
+            sum by (job, instance) (jvm_memory_used_bytes{area="heap"})
+            /
+            sum by (job, instance) (jvm_memory_max_bytes{area="heap"})
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JVM heap usage on {{ $labels.job }}"
+          description: "JVM heap usage on {{ $labels.job }} instance {{ $labels.instance }} has exceeded 85% for more than 5 minutes. Current usage: {{ $value | humanizePercentage }}. Risk of OutOfMemoryError if trend continues."
+
+  # ===========================================================================
+  # Business KPI Alerts
+  # ===========================================================================
+  - name: business_kpis
+    rules:
+      # -----------------------------------------------------------------------
+      # SagaStuck — saga in non-terminal state for > 10 minutes
+      # -----------------------------------------------------------------------
+      - alert: SagaStuck
+        expr: |
+          freightflow_sagas_active > 0
+            and ON(job)
+          (time() - freightflow_saga_last_transition_timestamp_seconds) > 600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Saga stuck in non-terminal state on {{ $labels.job }}"
+          description: "One or more sagas on service {{ $labels.job }} have been in a non-terminal state (not COMPLETED/FAILED) for more than 10 minutes. This may indicate a missing compensating event or a downstream service failure. Investigate the saga recovery job."
