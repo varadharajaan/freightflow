@@ -113,6 +113,60 @@ public class VesselScheduleServiceClient {
         return Optional.of(new VesselScheduleResponse(voyageId, "MV FreightStar", "In Service"));
     }
 
+    // ==================== Capacity Release (Saga Compensation) ====================
+
+    /**
+     * Releases previously reserved vessel capacity — used as a compensating transaction
+     * in the Booking Confirmation Saga.
+     *
+     * <p>When the saga fails after capacity has been reserved, this method is called
+     * to release the capacity back to the vessel schedule service. Uses the same
+     * resilience stack (circuit breaker + retry) as other vessel service calls.</p>
+     *
+     * @param voyageId the voyage whose capacity should be released
+     * @param teu      the TEU amount to release
+     * @return {@code true} if capacity was successfully released, {@code false} otherwise
+     */
+    @CircuitBreaker(name = "vesselScheduleService", fallbackMethod = "releaseCapacityFallback")
+    @Retry(name = "vesselScheduleService")
+    @Profiled(value = "releaseVesselCapacity", slowThresholdMs = 1000)
+    public boolean releaseCapacity(String voyageId, double teu) {
+        log.debug("Releasing vessel capacity: voyageId={}, teu={}", voyageId, teu);
+
+        // TODO: Replace with actual HTTP call to vessel-schedule-service
+        // using @HttpExchange or RestClient when service is built.
+        // For now, simulates a successful capacity release.
+
+        log.info("Vessel capacity released: voyageId={}, teu={}", voyageId, teu);
+        return true;
+    }
+
+    /**
+     * Fallback when vessel capacity release fails.
+     *
+     * <p>Strategy: Return false and log an error. Unlike capacity checks (which fail-safe
+     * by denying), capacity release failures require manual intervention to reconcile
+     * the reserved capacity. The saga orchestrator logs this as a compensation failure.</p>
+     *
+     * @param voyageId  the voyage ID
+     * @param teu       the TEU amount
+     * @param throwable the cause of the failure
+     * @return {@code false} (capacity was NOT released)
+     */
+    private boolean releaseCapacityFallback(String voyageId, double teu, Throwable throwable) {
+        logFallback("releaseCapacity", voyageId, throwable);
+        fallbackCounter.increment();
+
+        if (throwable instanceof CallNotPermittedException) {
+            circuitOpenCounter.increment();
+            log.error("Circuit breaker OPEN for vesselScheduleService — capacity release failed. " +
+                      "Manual reconciliation required for voyageId={}, teu={}", voyageId, teu);
+        }
+
+        // Capacity was NOT released — manual intervention needed
+        return false;
+    }
+
     // ==================== Fallback Methods ====================
 
     /**

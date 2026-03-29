@@ -1,11 +1,14 @@
 package com.freightflow.booking.infrastructure.adapter.in.rest;
 
 import com.freightflow.booking.application.BookingService;
+import com.freightflow.booking.application.saga.BookingConfirmationSaga;
+import com.freightflow.booking.application.saga.SagaExecution;
 import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.infrastructure.adapter.in.rest.dto.BookingResponse;
 import com.freightflow.booking.infrastructure.adapter.in.rest.dto.CancelBookingRequest;
 import com.freightflow.booking.infrastructure.adapter.in.rest.dto.ConfirmBookingRequest;
 import com.freightflow.booking.infrastructure.adapter.in.rest.dto.CreateBookingRequest;
+import com.freightflow.booking.infrastructure.adapter.in.rest.dto.SagaExecutionResponse;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,6 +43,7 @@ import java.util.Objects;
  *   <li>{@code POST   /api/v1/bookings}               — create a new booking</li>
  *   <li>{@code GET    /api/v1/bookings/{bookingId}}    — retrieve a booking</li>
  *   <li>{@code POST   /api/v1/bookings/{bookingId}/confirm} — confirm a booking</li>
+ *   <li>{@code POST   /api/v1/bookings/{bookingId}/confirm-saga} — confirm via saga orchestration</li>
  *   <li>{@code DELETE  /api/v1/bookings/{bookingId}}   — cancel a booking</li>
  *   <li>{@code GET    /api/v1/bookings?customerId={id}} — list bookings by customer</li>
  * </ul>
@@ -53,14 +58,19 @@ public class BookingController {
     private static final Logger log = LoggerFactory.getLogger(BookingController.class);
 
     private final BookingService bookingService;
+    private final BookingConfirmationSaga bookingConfirmationSaga;
 
     /**
-     * Creates a new {@code BookingController} with the required application service.
+     * Creates a new {@code BookingController} with the required application services.
      *
-     * @param bookingService the booking application service (must not be null)
+     * @param bookingService           the booking application service (must not be null)
+     * @param bookingConfirmationSaga  the saga orchestrator for distributed booking confirmation (must not be null)
      */
-    public BookingController(BookingService bookingService) {
+    public BookingController(BookingService bookingService,
+                             BookingConfirmationSaga bookingConfirmationSaga) {
         this.bookingService = Objects.requireNonNull(bookingService, "BookingService must not be null");
+        this.bookingConfirmationSaga = Objects.requireNonNull(bookingConfirmationSaga,
+                "BookingConfirmationSaga must not be null");
     }
 
     /**
@@ -194,6 +204,43 @@ public class BookingController {
         log.info("Retrieved {} bookings for customerId={}", responses.size(), customerId);
 
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Confirms a booking via the Saga Orchestration pattern.
+     *
+     * <p>Executes a distributed transaction spanning multiple microservices:
+     * booking confirmation, vessel capacity reservation, invoice generation,
+     * and notification. If any step fails, compensating transactions are
+     * executed to maintain data consistency across services.</p>
+     *
+     * <p>This endpoint is idempotent — the same {@code Idempotency-Key} header
+     * will return the same result without re-executing the saga.</p>
+     *
+     * @param bookingId      the booking UUID (path variable)
+     * @param request        the confirmation request containing the voyage ID
+     * @param idempotencyKey the caller-provided idempotency key (required header)
+     * @param authentication the current security context
+     * @return 200 OK with the saga execution result
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PostMapping("/{bookingId}/confirm-saga")
+    public ResponseEntity<SagaExecutionResponse> confirmBookingViaSaga(
+            @PathVariable String bookingId,
+            @Valid @RequestBody ConfirmBookingRequest request,
+            @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
+            Authentication authentication) {
+
+        log.debug("POST /api/v1/bookings/{}/confirm-saga — saga confirmation with voyageId={}, idempotencyKey={}",
+                bookingId, request.voyageId(), idempotencyKey);
+
+        SagaExecution saga = bookingConfirmationSaga.execute(bookingId, request.voyageId(), idempotencyKey);
+        SagaExecutionResponse response = SagaExecutionResponse.from(saga);
+
+        log.info("Saga execution result: sagaId={}, bookingId={}, status={}",
+                response.sagaId(), response.bookingId(), response.status());
+
+        return ResponseEntity.ok(response);
     }
 
     private void enforceCustomerSelfScope(
