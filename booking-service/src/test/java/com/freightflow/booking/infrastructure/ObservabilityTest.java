@@ -52,10 +52,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "management.endpoints.web.exposure.include=health,info,metrics,prometheus",
                 "management.endpoint.health.show-details=always",
                 "freightflow.tracing.enabled=false",
-                "freightflow.security.enabled=false"
+                "freightflow.security.enabled=true"
         }
 )
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Observability Stack Integration Tests")
 class ObservabilityTest {
