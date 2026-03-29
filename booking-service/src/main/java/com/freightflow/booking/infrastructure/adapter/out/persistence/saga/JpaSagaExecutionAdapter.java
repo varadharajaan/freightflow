@@ -105,6 +105,14 @@ public class JpaSagaExecutionAdapter implements SagaExecutionRepository {
                 .toList();
     }
 
+    @Override
+    public List<SagaExecution> findByStatus(SagaStatus status) {
+        log.debug("Finding saga executions by status: status={}", status);
+        return jpaRepository.findByStatus(status.name()).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     // ==================== Entity ↔ Domain Mapping ====================
 
     /**

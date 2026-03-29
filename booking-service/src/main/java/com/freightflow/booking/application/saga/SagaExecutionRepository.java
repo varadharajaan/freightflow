@@ -55,4 +55,12 @@ public interface SagaExecutionRepository {
      * @return list of saga executions (may be empty)
      */
     List<SagaExecution> findByBookingId(String bookingId);
+
+    /**
+     * Finds saga executions by lifecycle status.
+     *
+     * @param status saga status
+     * @return matching saga executions (may be empty)
+     */
+    List<SagaExecution> findByStatus(SagaStatus status);
 }

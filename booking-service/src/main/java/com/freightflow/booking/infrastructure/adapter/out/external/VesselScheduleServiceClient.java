@@ -1,13 +1,11 @@
 package com.freightflow.booking.infrastructure.adapter.out.external;
 
-import com.freightflow.commons.domain.FreightFlowConstants;
-import com.freightflow.commons.exception.ExternalServiceException;
+import com.freightflow.booking.application.port.VesselCapacityPort;
 import com.freightflow.commons.observability.profiling.Profiled;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -16,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Resilient client for calling the Vessel Schedule Service.
@@ -49,7 +46,7 @@ import java.util.concurrent.CompletableFuture;
  * @see com.freightflow.booking.infrastructure.config.resilience.ResilienceConfig
  */
 @Component
-public class VesselScheduleServiceClient {
+public class VesselScheduleServiceClient implements VesselCapacityPort {
 
     private static final Logger log = LoggerFactory.getLogger(VesselScheduleServiceClient.class);
 
@@ -70,26 +67,30 @@ public class VesselScheduleServiceClient {
     }
 
     /**
-     * Checks vessel capacity for a booking — with full resilience stack.
+     * Reserves vessel capacity for a booking — with full resilience stack.
      *
      * <p>Pattern order: Bulkhead → CircuitBreaker → Retry → Actual HTTP call</p>
      *
      * @param voyageId       the voyage to check
-     * @param requiredTeu    TEU capacity needed
-     * @return true if sufficient capacity, false otherwise
+     * @param teu            TEU capacity needed
+     * @param idempotencyKey idempotency key for downstream deduplication
+     * @return true if capacity is reserved, false otherwise
      */
-    @CircuitBreaker(name = "vesselScheduleService", fallbackMethod = "checkCapacityFallback")
+    @Override
+    @CircuitBreaker(name = "vesselScheduleService", fallbackMethod = "reserveCapacityFallback")
     @Retry(name = "vesselScheduleService")
     @Bulkhead(name = "vesselScheduleService")
-    @Profiled(value = "checkVesselCapacity", slowThresholdMs = 1000)
-    public boolean checkVesselCapacity(String voyageId, double requiredTeu) {
-        log.debug("Checking vessel capacity: voyageId={}, requiredTeu={}", voyageId, requiredTeu);
+    @Profiled(value = "reserveVesselCapacity", slowThresholdMs = 1000)
+    public boolean reserveCapacity(String voyageId, double teu, String idempotencyKey) {
+        log.debug("Reserving vessel capacity: voyageId={}, teu={}, idempotencyKey={}",
+                voyageId, teu, idempotencyKey);
 
         // TODO: Replace with actual HTTP call to vessel-schedule-service
         // using @HttpExchange or RestClient when service is built
         // For now, simulates the call pattern
 
-        log.info("Vessel capacity check passed: voyageId={}, requiredTeu={}", voyageId, requiredTeu);
+        log.info("Vessel capacity reserved: voyageId={}, teu={}, idempotencyKey={}",
+                voyageId, teu, idempotencyKey);
         return true;
     }
 
@@ -125,19 +126,23 @@ public class VesselScheduleServiceClient {
      *
      * @param voyageId the voyage whose capacity should be released
      * @param teu      the TEU amount to release
+     * @param idempotencyKey idempotency key for downstream deduplication
      * @return {@code true} if capacity was successfully released, {@code false} otherwise
      */
+    @Override
     @CircuitBreaker(name = "vesselScheduleService", fallbackMethod = "releaseCapacityFallback")
     @Retry(name = "vesselScheduleService")
     @Profiled(value = "releaseVesselCapacity", slowThresholdMs = 1000)
-    public boolean releaseCapacity(String voyageId, double teu) {
-        log.debug("Releasing vessel capacity: voyageId={}, teu={}", voyageId, teu);
+    public boolean releaseCapacity(String voyageId, double teu, String idempotencyKey) {
+        log.debug("Releasing vessel capacity: voyageId={}, teu={}, idempotencyKey={}",
+                voyageId, teu, idempotencyKey);
 
         // TODO: Replace with actual HTTP call to vessel-schedule-service
         // using @HttpExchange or RestClient when service is built.
         // For now, simulates a successful capacity release.
 
-        log.info("Vessel capacity released: voyageId={}, teu={}", voyageId, teu);
+        log.info("Vessel capacity released: voyageId={}, teu={}, idempotencyKey={}",
+                voyageId, teu, idempotencyKey);
         return true;
     }
 
@@ -153,14 +158,15 @@ public class VesselScheduleServiceClient {
      * @param throwable the cause of the failure
      * @return {@code false} (capacity was NOT released)
      */
-    private boolean releaseCapacityFallback(String voyageId, double teu, Throwable throwable) {
+    private boolean releaseCapacityFallback(String voyageId, double teu, String idempotencyKey, Throwable throwable) {
         logFallback("releaseCapacity", voyageId, throwable);
         fallbackCounter.increment();
 
         if (throwable instanceof CallNotPermittedException) {
             circuitOpenCounter.increment();
             log.error("Circuit breaker OPEN for vesselScheduleService — capacity release failed. " +
-                      "Manual reconciliation required for voyageId={}, teu={}", voyageId, teu);
+                      "Manual reconciliation required for voyageId={}, teu={}, idempotencyKey={}",
+                    voyageId, teu, idempotencyKey);
         }
 
         // Capacity was NOT released — manual intervention needed
@@ -170,26 +176,28 @@ public class VesselScheduleServiceClient {
     // ==================== Fallback Methods ====================
 
     /**
-     * Fallback when vessel capacity check fails.
+     * Fallback when vessel capacity reservation fails.
      *
      * <p>Strategy: Return false (deny booking) when we can't verify capacity.
      * This is a <b>fail-safe</b> approach — we don't overbook.</p>
      *
      * @param voyageId    the voyage ID
-     * @param requiredTeu the required TEU
+     * @param teu the required TEU
+     * @param idempotencyKey idempotency key
      * @param throwable   the cause of the failure
      * @return false (deny the booking as a safety measure)
      */
-    private boolean checkCapacityFallback(String voyageId, double requiredTeu, Throwable throwable) {
-        logFallback("checkVesselCapacity", voyageId, throwable);
+    private boolean reserveCapacityFallback(String voyageId, double teu, String idempotencyKey, Throwable throwable) {
+        logFallback("reserveCapacity", voyageId, throwable);
         fallbackCounter.increment();
 
         if (throwable instanceof CallNotPermittedException) {
             circuitOpenCounter.increment();
-            log.error("Circuit breaker OPEN for vesselScheduleService — denying capacity check");
+            log.error("Circuit breaker OPEN for vesselScheduleService — denying capacity reservation: " +
+                    "voyageId={}, teu={}, idempotencyKey={}", voyageId, teu, idempotencyKey);
         }
 
-        // Fail-safe: deny booking when capacity cannot be verified
+        // Fail-safe: deny booking when capacity cannot be reserved
         return false;
     }
 

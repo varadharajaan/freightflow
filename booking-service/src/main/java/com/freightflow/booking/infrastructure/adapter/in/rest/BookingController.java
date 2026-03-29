@@ -220,7 +220,6 @@ public class BookingController {
      * @param bookingId      the booking UUID (path variable)
      * @param request        the confirmation request containing the voyage ID
      * @param idempotencyKey the caller-provided idempotency key (required header)
-     * @param authentication the current security context
      * @return 200 OK with the saga execution result
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
@@ -228,13 +227,17 @@ public class BookingController {
     public ResponseEntity<SagaExecutionResponse> confirmBookingViaSaga(
             @PathVariable String bookingId,
             @Valid @RequestBody ConfirmBookingRequest request,
-            @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
-            Authentication authentication) {
+            @RequestHeader(name = "Idempotency-Key") String idempotencyKey) {
+
+        String normalizedIdempotencyKey = idempotencyKey != null ? idempotencyKey.trim() : "";
+        if (normalizedIdempotencyKey.isEmpty()) {
+            throw new IllegalArgumentException("Idempotency-Key header must not be blank");
+        }
 
         log.debug("POST /api/v1/bookings/{}/confirm-saga — saga confirmation with voyageId={}, idempotencyKey={}",
-                bookingId, request.voyageId(), idempotencyKey);
+                bookingId, request.voyageId(), normalizedIdempotencyKey);
 
-        SagaExecution saga = bookingConfirmationSaga.execute(bookingId, request.voyageId(), idempotencyKey);
+        SagaExecution saga = bookingConfirmationSaga.execute(bookingId, request.voyageId(), normalizedIdempotencyKey);
         SagaExecutionResponse response = SagaExecutionResponse.from(saga);
 
         log.info("Saga execution result: sagaId={}, bookingId={}, status={}",

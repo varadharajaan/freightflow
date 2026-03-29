@@ -1,13 +1,17 @@
 package com.freightflow.booking.application.saga;
 
+import com.freightflow.booking.application.port.BillingPort;
+import com.freightflow.booking.application.port.NotificationPort;
+import com.freightflow.booking.application.port.VesselCapacityPort;
 import com.freightflow.booking.application.BookingService;
 import com.freightflow.booking.domain.model.Booking;
-import com.freightflow.booking.infrastructure.adapter.out.external.VesselScheduleServiceClient;
 import com.freightflow.commons.observability.profiling.Profiled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,21 +61,30 @@ public class BookingConfirmationSaga {
     private static final Logger log = LoggerFactory.getLogger(BookingConfirmationSaga.class);
 
     private final BookingService bookingService;
-    private final VesselScheduleServiceClient vesselClient;
+    private final VesselCapacityPort vesselCapacityPort;
+    private final BillingPort billingPort;
+    private final NotificationPort notificationPort;
     private final SagaExecutionRepository sagaRepository;
 
     /**
      * Creates a new {@code BookingConfirmationSaga} with all required dependencies.
      *
      * @param bookingService the booking application service for confirm/cancel operations
-     * @param vesselClient   the vessel schedule client for capacity reservation/release
+     * @param vesselCapacityPort outbound port for vessel capacity reservation/release
+     * @param billingPort outbound port for billing operations
+     * @param notificationPort outbound port for notification operations
      * @param sagaRepository the repository for persisting saga execution state
      */
-    public BookingConfirmationSaga(BookingService bookingService,
-                                    VesselScheduleServiceClient vesselClient,
-                                    SagaExecutionRepository sagaRepository) {
+    public BookingConfirmationSaga(
+            BookingService bookingService,
+            VesselCapacityPort vesselCapacityPort,
+            BillingPort billingPort,
+            NotificationPort notificationPort,
+            SagaExecutionRepository sagaRepository) {
         this.bookingService = Objects.requireNonNull(bookingService, "BookingService must not be null");
-        this.vesselClient = Objects.requireNonNull(vesselClient, "VesselScheduleServiceClient must not be null");
+        this.vesselCapacityPort = Objects.requireNonNull(vesselCapacityPort, "VesselCapacityPort must not be null");
+        this.billingPort = Objects.requireNonNull(billingPort, "BillingPort must not be null");
+        this.notificationPort = Objects.requireNonNull(notificationPort, "NotificationPort must not be null");
         this.sagaRepository = Objects.requireNonNull(sagaRepository, "SagaExecutionRepository must not be null");
     }
 
@@ -99,20 +112,12 @@ public class BookingConfirmationSaga {
         log.info("Saga starting: bookingId={}, voyageId={}, idempotencyKey={}",
                 bookingId, voyageId, idempotencyKey);
 
-        // ── Step 0: Idempotency check ──
-        Optional<SagaExecution> existing = sagaRepository.findByIdempotencyKey(idempotencyKey);
-        if (existing.isPresent()) {
-            log.info("Saga already exists for idempotencyKey={}, returning existing result: sagaId={}, status={}",
-                    idempotencyKey, existing.get().getSagaId(), existing.get().getStatus());
-            return existing.get();
+        SagaExecution saga = createOrLoadByIdempotencyKey(bookingId, voyageId, idempotencyKey);
+        if (saga.getStatus().isTerminal()) {
+            log.info("Saga already finished for idempotencyKey={}, returning existing result: sagaId={}, status={}",
+                    idempotencyKey, saga.getSagaId(), saga.getStatus());
+            return saga;
         }
-
-        // ── Create saga execution ──
-        SagaExecution saga = SagaExecution.initiate(bookingId, voyageId, idempotencyKey);
-        saga = sagaRepository.save(saga);
-
-        log.info("Saga created: sagaId={}, bookingId={}, voyageId={}",
-                saga.getSagaId(), bookingId, voyageId);
 
         // ── Step 1: Confirm Booking ──
         try {
@@ -120,10 +125,7 @@ public class BookingConfirmationSaga {
         } catch (Exception e) {
             log.warn("Saga step CONFIRM_BOOKING failed: sagaId={}, bookingId={}, error={}",
                     saga.getSagaId(), bookingId, e.getMessage());
-            saga.markFailed(SagaStep.CONFIRM_BOOKING, e.getMessage());
-            sagaRepository.save(saga);
-            log.info("Saga failed (no compensation needed — first step): sagaId={}", saga.getSagaId());
-            return saga;
+            return markFailed(saga, SagaStep.CONFIRM_BOOKING, e.getMessage());
         }
 
         // ── Step 2: Reserve Vessel Capacity ──
@@ -132,27 +134,21 @@ public class BookingConfirmationSaga {
         } catch (Exception e) {
             log.warn("Saga step RESERVE_CAPACITY failed: sagaId={}, voyageId={}, error={}",
                     saga.getSagaId(), voyageId, e.getMessage());
-            saga.markFailed(SagaStep.RESERVE_CAPACITY, e.getMessage());
-            sagaRepository.save(saga);
-            compensate(saga, bookingId, voyageId);
-            return saga;
+            return failWithCompensation(saga, SagaStep.RESERVE_CAPACITY, e.getMessage(), bookingId, voyageId);
         }
 
         // ── Step 3: Generate Invoice ──
         try {
-            saga = executeGenerateInvoice(saga, bookingId);
+            saga = executeGenerateInvoice(saga, bookingId, idempotencyKey);
         } catch (Exception e) {
             log.warn("Saga step GENERATE_INVOICE failed: sagaId={}, bookingId={}, error={}",
                     saga.getSagaId(), bookingId, e.getMessage());
-            saga.markFailed(SagaStep.GENERATE_INVOICE, e.getMessage());
-            sagaRepository.save(saga);
-            compensate(saga, bookingId, voyageId);
-            return saga;
+            return failWithCompensation(saga, SagaStep.GENERATE_INVOICE, e.getMessage(), bookingId, voyageId);
         }
 
         // ── Step 4: Send Notification (fire-and-forget) ──
         try {
-            saga = executeSendNotification(saga, bookingId);
+            saga = executeSendNotification(saga, bookingId, idempotencyKey);
         } catch (Exception e) {
             log.warn("Saga step SEND_NOTIFICATION failed (fire-and-forget, continuing): sagaId={}, bookingId={}, error={}",
                     saga.getSagaId(), bookingId, e.getMessage());
@@ -167,6 +163,49 @@ public class BookingConfirmationSaga {
                 saga.getSagaId(), bookingId, saga.getCompletedSteps().size());
 
         return saga;
+    }
+
+    private SagaExecution createOrLoadByIdempotencyKey(String bookingId, String voyageId, String idempotencyKey) {
+        Optional<SagaExecution> existing = sagaRepository.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        SagaExecution saga = SagaExecution.initiate(bookingId, voyageId, idempotencyKey);
+        try {
+            saga = sagaRepository.save(saga);
+            log.info("Saga created: sagaId={}, bookingId={}, voyageId={}, idempotencyKey={}",
+                    saga.getSagaId(), bookingId, voyageId, idempotencyKey);
+            return saga;
+        } catch (DataIntegrityViolationException duplicateKey) {
+            log.warn("Detected concurrent saga creation for idempotencyKey={}, loading existing execution",
+                    idempotencyKey);
+            return sagaRepository.findByIdempotencyKey(idempotencyKey)
+                    .orElseThrow(() -> duplicateKey);
+        }
+    }
+
+    private SagaExecution failWithCompensation(
+            SagaExecution saga,
+            SagaStep failedStep,
+            String reason,
+            String bookingId,
+            String voyageId) {
+
+        List<String> compensationFailures = compensate(saga, bookingId, voyageId);
+        String mergedReason = reason;
+        if (!compensationFailures.isEmpty()) {
+            mergedReason = reason + " | Compensation failures: " + String.join("; ", compensationFailures);
+        }
+        return markFailed(saga, failedStep, mergedReason);
+    }
+
+    private SagaExecution markFailed(SagaExecution saga, SagaStep failedStep, String reason) {
+        saga.markFailed(failedStep, reason);
+        SagaExecution saved = sagaRepository.save(saga);
+        log.info("Saga failed: sagaId={}, failedStep={}, reason={}",
+                saved.getSagaId(), failedStep, reason);
+        return saved;
     }
 
     // ==================== Step Execution Methods ====================
@@ -202,7 +241,7 @@ public class BookingConfirmationSaga {
         Booking booking = bookingService.getBooking(bookingId);
         double requiredTeu = booking.getCargo().totalTeu();
 
-        boolean reserved = vesselClient.checkVesselCapacity(voyageId, requiredTeu);
+        boolean reserved = vesselCapacityPort.reserveCapacity(voyageId, requiredTeu, saga.getIdempotencyKey());
         if (!reserved) {
             throw new SagaStepException("Insufficient vessel capacity for voyageId=%s, requiredTeu=%.1f"
                     .formatted(voyageId, requiredTeu));
@@ -218,15 +257,17 @@ public class BookingConfirmationSaga {
      * Step 3: Generates an invoice for the confirmed booking via the billing service.
      */
     @Profiled(value = "sagaStep.generateInvoice", slowThresholdMs = 2000)
-    private SagaExecution executeGenerateInvoice(SagaExecution saga, String bookingId) {
+    private SagaExecution executeGenerateInvoice(SagaExecution saga, String bookingId, String idempotencyKey) {
         log.info("Saga step GENERATE_INVOICE starting: sagaId={}, bookingId={}", saga.getSagaId(), bookingId);
 
         saga.advanceTo(SagaStep.GENERATE_INVOICE);
         saga = sagaRepository.save(saga);
 
-        // TODO: Replace with actual billing service call when billing-service is integrated.
-        // For now, simulates a successful invoice generation.
-        // billingServiceClient.generateInvoice(bookingId);
+        boolean generated = billingPort.generateInvoice(bookingId, idempotencyKey);
+        if (!generated) {
+            throw new SagaStepException("Billing service rejected invoice generation for bookingId=%s"
+                    .formatted(bookingId));
+        }
 
         log.info("Saga step GENERATE_INVOICE completed: sagaId={}, bookingId={}", saga.getSagaId(), bookingId);
 
@@ -237,14 +278,17 @@ public class BookingConfirmationSaga {
      * Step 4: Sends a booking confirmation notification (fire-and-forget).
      */
     @Profiled(value = "sagaStep.sendNotification", slowThresholdMs = 1000)
-    private SagaExecution executeSendNotification(SagaExecution saga, String bookingId) {
+    private SagaExecution executeSendNotification(SagaExecution saga, String bookingId, String idempotencyKey) {
         log.info("Saga step SEND_NOTIFICATION starting: sagaId={}, bookingId={}", saga.getSagaId(), bookingId);
 
         saga.advanceTo(SagaStep.SEND_NOTIFICATION);
         saga = sagaRepository.save(saga);
 
-        // TODO: Replace with actual notification service call when notification-service is integrated.
-        // notificationServiceClient.sendBookingConfirmation(bookingId);
+        boolean sent = notificationPort.sendBookingConfirmation(bookingId, idempotencyKey);
+        if (!sent) {
+            throw new SagaStepException("Notification service rejected confirmation dispatch for bookingId=%s"
+                    .formatted(bookingId));
+        }
 
         log.info("Saga step SEND_NOTIFICATION completed: sagaId={}, bookingId={}", saga.getSagaId(), bookingId);
 
@@ -264,12 +308,13 @@ public class BookingConfirmationSaga {
      * @param bookingId the booking ID
      * @param voyageId  the voyage ID
      */
-    private void compensate(SagaExecution saga, String bookingId, String voyageId) {
+    private List<String> compensate(SagaExecution saga, String bookingId, String voyageId) {
         List<SagaStep> stepsToCompensate = saga.stepsRequiringCompensation();
+        List<String> failures = new ArrayList<>();
 
         if (stepsToCompensate.isEmpty()) {
             log.info("Saga compensation: no compensatable steps to roll back: sagaId={}", saga.getSagaId());
-            return;
+            return failures;
         }
 
         log.info("Saga compensation starting: sagaId={}, stepsToCompensate={}",
@@ -292,11 +337,13 @@ public class BookingConfirmationSaga {
                 log.error("Saga compensation FAILED for step {}: sagaId={}, error={}. " +
                           "Manual intervention may be required.",
                         step, saga.getSagaId(), e.getMessage(), e);
+                failures.add("%s: %s".formatted(step.name(), e.getMessage()));
             }
         }
 
         log.info("Saga compensation finished: sagaId={}, compensatedSteps={}",
                 saga.getSagaId(), stepsToCompensate.size());
+        return failures;
     }
 
     /**
@@ -324,7 +371,7 @@ public class BookingConfirmationSaga {
         try {
             Booking booking = bookingService.getBooking(bookingId);
             double teu = booking.getCargo().totalTeu();
-            boolean released = vesselClient.releaseCapacity(voyageId, teu);
+            boolean released = vesselCapacityPort.releaseCapacity(voyageId, teu, saga.getIdempotencyKey());
 
             if (released) {
                 log.info("Compensation RESERVE_CAPACITY succeeded: sagaId={}, voyageId={}, teu={}",
@@ -341,20 +388,18 @@ public class BookingConfirmationSaga {
     }
 
     /**
-     * Compensates Step 3: Cancels the generated invoice.
-     *
-     * <p>Currently a placeholder — the billing service client is not yet integrated
-     * directly. Invoice cancellation will be triggered via the BookingCancelled event
-     * published when the booking is cancelled in the compensation of Step 1.</p>
+     * Compensates Step 3: Cancels the generated invoice in billing.
      */
     private void compensateGenerateInvoice(SagaExecution saga, String bookingId) {
         log.info("Compensating GENERATE_INVOICE: sagaId={}, bookingId={}", saga.getSagaId(), bookingId);
 
-        // TODO: Call billing service to cancel invoice directly when billing-service client is available.
-        // For now, the invoice cancellation is handled implicitly via the BookingCancelled event
-        // that billing-service consumes when the booking is cancelled in compensateConfirmBooking().
+        boolean cancelled = billingPort.cancelInvoice(bookingId, saga.getIdempotencyKey());
+        if (!cancelled) {
+            throw new SagaStepException("Billing service rejected invoice cancellation for bookingId=%s"
+                    .formatted(bookingId));
+        }
 
-        log.info("Compensation GENERATE_INVOICE noted (handled via event): sagaId={}, bookingId={}",
+        log.info("Compensation GENERATE_INVOICE succeeded: sagaId={}, bookingId={}",
                 saga.getSagaId(), bookingId);
     }
 

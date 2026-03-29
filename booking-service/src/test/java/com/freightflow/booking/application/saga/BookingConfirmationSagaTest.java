@@ -1,17 +1,18 @@
 package com.freightflow.booking.application.saga;
 
 import com.freightflow.booking.application.BookingService;
+import com.freightflow.booking.application.port.BillingPort;
+import com.freightflow.booking.application.port.NotificationPort;
+import com.freightflow.booking.application.port.VesselCapacityPort;
 import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.domain.model.BookingStatus;
 import com.freightflow.booking.domain.model.Cargo;
 import com.freightflow.booking.domain.model.ContainerType;
-import com.freightflow.booking.infrastructure.adapter.out.external.VesselScheduleServiceClient;
 import com.freightflow.commons.domain.BookingId;
 import com.freightflow.commons.domain.CustomerId;
 import com.freightflow.commons.domain.PortCode;
 import com.freightflow.commons.domain.VoyageId;
 import com.freightflow.commons.domain.Weight;
-import com.freightflow.commons.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,7 +33,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,7 +65,13 @@ class BookingConfirmationSagaTest {
     private BookingService bookingService;
 
     @Mock
-    private VesselScheduleServiceClient vesselClient;
+    private VesselCapacityPort vesselCapacityPort;
+
+    @Mock
+    private BillingPort billingPort;
+
+    @Mock
+    private NotificationPort notificationPort;
 
     @Mock
     private SagaExecutionRepository sagaRepository;
@@ -73,7 +80,12 @@ class BookingConfirmationSagaTest {
 
     @BeforeEach
     void setUp() {
-        saga = new BookingConfirmationSaga(bookingService, vesselClient, sagaRepository);
+        saga = new BookingConfirmationSaga(
+                bookingService,
+                vesselCapacityPort,
+                billingPort,
+                notificationPort,
+                sagaRepository);
 
         // Default: no existing saga for idempotency key
         when(sagaRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
@@ -122,7 +134,9 @@ class BookingConfirmationSagaTest {
             Booking mockBooking = createMockBooking();
             when(bookingService.confirmBooking(BOOKING_ID, VOYAGE_ID)).thenReturn(mockBooking);
             when(bookingService.getBooking(BOOKING_ID)).thenReturn(mockBooking);
-            when(vesselClient.checkVesselCapacity(eq(VOYAGE_ID), anyDouble())).thenReturn(true);
+            when(vesselCapacityPort.reserveCapacity(eq(VOYAGE_ID), anyDouble(), eq(IDEMPOTENCY_KEY))).thenReturn(true);
+            when(billingPort.generateInvoice(BOOKING_ID, IDEMPOTENCY_KEY)).thenReturn(true);
+            when(notificationPort.sendBookingConfirmation(BOOKING_ID, IDEMPOTENCY_KEY)).thenReturn(true);
 
             // When
             SagaExecution result = saga.execute(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
@@ -142,11 +156,14 @@ class BookingConfirmationSagaTest {
 
             // Verify step execution
             verify(bookingService).confirmBooking(BOOKING_ID, VOYAGE_ID);
-            verify(vesselClient).checkVesselCapacity(eq(VOYAGE_ID), anyDouble());
+            verify(vesselCapacityPort).reserveCapacity(eq(VOYAGE_ID), anyDouble(), eq(IDEMPOTENCY_KEY));
+            verify(billingPort).generateInvoice(BOOKING_ID, IDEMPOTENCY_KEY);
+            verify(notificationPort).sendBookingConfirmation(BOOKING_ID, IDEMPOTENCY_KEY);
 
             // Verify no compensation was triggered
             verify(bookingService, never()).cancelBooking(anyString(), anyString());
-            verify(vesselClient, never()).releaseCapacity(anyString(), anyDouble());
+            verify(vesselCapacityPort, never()).releaseCapacity(anyString(), anyDouble(), anyString());
+            verify(billingPort, never()).cancelInvoice(anyString(), anyString());
         }
     }
 
@@ -174,7 +191,7 @@ class BookingConfirmationSagaTest {
 
             // Verify no compensation was attempted
             verify(bookingService, never()).cancelBooking(anyString(), anyString());
-            verify(vesselClient, never()).releaseCapacity(anyString(), anyDouble());
+            verify(vesselCapacityPort, never()).releaseCapacity(anyString(), anyDouble(), anyString());
         }
 
         @Test
@@ -184,7 +201,7 @@ class BookingConfirmationSagaTest {
             Booking mockBooking = createMockBooking();
             when(bookingService.confirmBooking(BOOKING_ID, VOYAGE_ID)).thenReturn(mockBooking);
             when(bookingService.getBooking(BOOKING_ID)).thenReturn(mockBooking);
-            when(vesselClient.checkVesselCapacity(eq(VOYAGE_ID), anyDouble())).thenReturn(false);
+            when(vesselCapacityPort.reserveCapacity(eq(VOYAGE_ID), anyDouble(), eq(IDEMPOTENCY_KEY))).thenReturn(false);
 
             // When
             SagaExecution result = saga.execute(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
@@ -198,48 +215,28 @@ class BookingConfirmationSagaTest {
             verify(bookingService).cancelBooking(eq(BOOKING_ID), anyString());
 
             // Verify no capacity release was attempted (capacity was never reserved)
-            verify(vesselClient, never()).releaseCapacity(anyString(), anyDouble());
+            verify(vesselCapacityPort, never()).releaseCapacity(anyString(), anyDouble(), anyString());
         }
 
         @Test
         @DisplayName("should compensate booking and capacity when invoice generation fails")
         void should_CompensateBookingAndCapacity_When_InvoiceGenerationFails() {
-            // Given — Steps 1 & 2 succeed, Step 3 (generate invoice) fails
+            // Given — Steps 1 & 2 succeed, Step 3 fails
             Booking mockBooking = createMockBooking();
             when(bookingService.confirmBooking(BOOKING_ID, VOYAGE_ID)).thenReturn(mockBooking);
             when(bookingService.getBooking(BOOKING_ID)).thenReturn(mockBooking);
-            when(vesselClient.checkVesselCapacity(eq(VOYAGE_ID), anyDouble())).thenReturn(true);
-            when(vesselClient.releaseCapacity(eq(VOYAGE_ID), anyDouble())).thenReturn(true);
+            when(vesselCapacityPort.reserveCapacity(eq(VOYAGE_ID), anyDouble(), eq(IDEMPOTENCY_KEY))).thenReturn(true);
+            when(vesselCapacityPort.releaseCapacity(eq(VOYAGE_ID), anyDouble(), eq(IDEMPOTENCY_KEY))).thenReturn(true);
+            when(billingPort.generateInvoice(BOOKING_ID, IDEMPOTENCY_KEY)).thenReturn(false);
 
-            // Simulate invoice generation failure by making the saga's internal call fail.
-            // Since generateInvoice is a TODO stub that currently succeeds, we need to
-            // trigger a failure differently. We'll use a spy approach by re-creating
-            // the test to inject a failure scenario.
+            // When
+            SagaExecution result = saga.execute(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
 
-            // Instead: override the bookingService.getBooking to fail on the SECOND call
-            // (first call is in reserveCapacity, second would be in compensateReserveCapacity)
-            // Actually, we need to make generateInvoice fail. Since it's a TODO stub,
-            // we test the compensation by testing what happens if generateInvoice WERE to throw.
-            // The cleanest approach: create a custom saga subclass for testing, or verify
-            // the compensation logic directly on SagaExecution.
-
-            // For this test, we simulate the scenario by verifying SagaExecution's
-            // compensation method works correctly with Steps 1 and 2 completed.
-            SagaExecution sagaExec = SagaExecution.initiate(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
-            sagaExec.advanceTo(SagaStep.CONFIRM_BOOKING);
-            sagaExec.advanceTo(SagaStep.RESERVE_CAPACITY);
-            sagaExec.advanceTo(SagaStep.GENERATE_INVOICE);
-            sagaExec.markFailed(SagaStep.GENERATE_INVOICE, "Billing service unavailable");
-
-            // Then — verify compensation order
-            assertThat(sagaExec.getStatus()).isEqualTo(SagaStatus.FAILED);
-            assertThat(sagaExec.getFailedStep()).isEqualTo(SagaStep.GENERATE_INVOICE);
-
-            // Steps requiring compensation should be in reverse order
-            assertThat(sagaExec.stepsRequiringCompensation()).containsExactly(
-                    SagaStep.RESERVE_CAPACITY,
-                    SagaStep.CONFIRM_BOOKING
-            );
+            // Then
+            assertThat(result.getStatus()).isEqualTo(SagaStatus.FAILED);
+            assertThat(result.getFailedStep()).isEqualTo(SagaStep.GENERATE_INVOICE);
+            verify(vesselCapacityPort).releaseCapacity(eq(VOYAGE_ID), anyDouble(), eq(IDEMPOTENCY_KEY));
+            verify(bookingService).cancelBooking(eq(BOOKING_ID), anyString());
         }
 
         @Test
@@ -249,12 +246,9 @@ class BookingConfirmationSagaTest {
             Booking mockBooking = createMockBooking();
             when(bookingService.confirmBooking(BOOKING_ID, VOYAGE_ID)).thenReturn(mockBooking);
             when(bookingService.getBooking(BOOKING_ID)).thenReturn(mockBooking);
-            when(vesselClient.checkVesselCapacity(eq(VOYAGE_ID), anyDouble())).thenReturn(true);
-
-            // Note: Step 4 (sendNotification) is currently a TODO stub that won't fail.
-            // We verify the fire-and-forget behavior by checking that even when all steps
-            // run, the notification step's failure would NOT trigger compensation.
-            // The saga should still complete successfully.
+            when(vesselCapacityPort.reserveCapacity(eq(VOYAGE_ID), anyDouble(), eq(IDEMPOTENCY_KEY))).thenReturn(true);
+            when(billingPort.generateInvoice(BOOKING_ID, IDEMPOTENCY_KEY)).thenReturn(true);
+            when(notificationPort.sendBookingConfirmation(BOOKING_ID, IDEMPOTENCY_KEY)).thenReturn(false);
 
             // When
             SagaExecution result = saga.execute(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
@@ -265,7 +259,7 @@ class BookingConfirmationSagaTest {
 
             // Verify NO compensation was triggered
             verify(bookingService, never()).cancelBooking(anyString(), anyString());
-            verify(vesselClient, never()).releaseCapacity(anyString(), anyDouble());
+            verify(vesselCapacityPort, never()).releaseCapacity(anyString(), anyDouble(), anyString());
         }
     }
 
@@ -297,8 +291,27 @@ class BookingConfirmationSagaTest {
 
             // Verify no steps were executed
             verify(bookingService, never()).confirmBooking(anyString(), anyString());
-            verify(vesselClient, never()).checkVesselCapacity(anyString(), anyDouble());
+            verify(vesselCapacityPort, never()).reserveCapacity(anyString(), anyDouble(), anyString());
             verify(sagaRepository, never()).save(any(SagaExecution.class));
+        }
+
+        @Test
+        @DisplayName("should return existing saga when concurrent insert hits unique constraint")
+        void should_ReturnExistingSaga_When_ConcurrentInsertCausesDuplicateKey() {
+            SagaExecution existingSaga = SagaExecution.initiate(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
+            existingSaga.markFailed(SagaStep.CONFIRM_BOOKING, "Previously failed");
+
+            when(sagaRepository.findByIdempotencyKey(IDEMPOTENCY_KEY))
+                    .thenReturn(Optional.empty())
+                    .thenReturn(Optional.of(existingSaga));
+            when(sagaRepository.save(any(SagaExecution.class)))
+                    .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint"));
+
+            SagaExecution result = saga.execute(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
+
+            assertThat(result).isSameAs(existingSaga);
+            verify(bookingService, never()).confirmBooking(anyString(), anyString());
+            verify(vesselCapacityPort, never()).reserveCapacity(anyString(), anyDouble(), anyString());
         }
     }
 
@@ -508,7 +521,9 @@ class BookingConfirmationSagaTest {
             Booking mockBooking = createMockBooking();
             when(bookingService.confirmBooking(BOOKING_ID, VOYAGE_ID)).thenReturn(mockBooking);
             when(bookingService.getBooking(BOOKING_ID)).thenReturn(mockBooking);
-            when(vesselClient.checkVesselCapacity(eq(VOYAGE_ID), anyDouble())).thenReturn(true);
+            when(vesselCapacityPort.reserveCapacity(eq(VOYAGE_ID), anyDouble(), eq(IDEMPOTENCY_KEY))).thenReturn(true);
+            when(billingPort.generateInvoice(BOOKING_ID, IDEMPOTENCY_KEY)).thenReturn(true);
+            when(notificationPort.sendBookingConfirmation(BOOKING_ID, IDEMPOTENCY_KEY)).thenReturn(true);
 
             // When
             saga.execute(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);

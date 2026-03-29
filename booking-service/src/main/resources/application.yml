@@ -145,6 +145,10 @@ freightflow:
     enabled: true
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}
+  saga:
+    recovery:
+      interval-ms: ${SAGA_RECOVERY_INTERVAL_MS:60000}
+      stale-threshold-ms: ${SAGA_RECOVERY_STALE_THRESHOLD_MS:300000}
   kafka:
     partitions: 12
     replication-factor: 1
