@@ -18,6 +18,8 @@ jobs:
           java -version 2>&1 | grep '"21' || (echo "ERROR: Java 21 required" && exit 1)
       - name: Verify Maven Wrapper
         run: |
+          test -f mvnw || (echo "ERROR: mvnw script missing" && exit 1)
+          test -f mvnw.cmd || (echo "ERROR: mvnw.cmd script missing" && exit 1)
           test -f .mvn/wrapper/maven-wrapper.properties || (echo "ERROR: Maven Wrapper missing" && exit 1)
 
   build-and-test:
@@ -55,11 +57,11 @@ jobs:
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'temurin', cache: 'maven' }
       - name: Checkstyle
-        run: ./mvnw checkstyle:check -B -ntp || true
+        run: ./mvnw checkstyle:check -B -ntp
       - name: SpotBugs
-        run: ./mvnw spotbugs:check -B -ntp || true
+        run: ./mvnw spotbugs:check -B -ntp
       - name: Architecture Tests
-        run: ./mvnw test -B -ntp -Dtest="*ArchitectureTest" -pl booking-service
+        run: ./mvnw test -B -ntp -Dtest="*ArchitectureTest" -Dsurefire.failIfNoSpecifiedTests=false
 
   security-scan:
     needs: build-and-test
@@ -69,4 +71,4 @@ jobs:
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'temurin', cache: 'maven' }
       - name: OWASP Dependency Check
-        run: ./mvnw org.owasp:dependency-check-maven:check -B -ntp || true
+        run: ./mvnw org.owasp:dependency-check-maven:check -B -ntp

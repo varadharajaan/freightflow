@@ -93,6 +93,7 @@ spring:
       - active-vessels
       - voyages
       - vessel-voyages
+      - available-routes
 
 # =============================================================================
 # Server Configuration
@@ -133,6 +134,9 @@ freightflow:
   kafka:
     partitions: 12
     replication-factor: 1
+  outbox:
+    vessel-topic: ${VESSEL_EVENTS_TOPIC:vessel.events}
+    dispatch-interval-ms: ${OUTBOX_DISPATCH_INTERVAL_MS:1000}
 
 # =============================================================================
 # Eureka Client — Service Registration and Discovery

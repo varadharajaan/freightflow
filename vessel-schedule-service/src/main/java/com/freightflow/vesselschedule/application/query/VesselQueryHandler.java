@@ -137,6 +137,7 @@ public class VesselQueryHandler {
      * @return list of voyages with sufficient capacity
      */
     @Transactional(readOnly = true)
+    @Cacheable(value = "available-routes", key = "#minCapacityTeu", unless = "#result.isEmpty()")
     @Profiled(value = "findAvailableVoyages", slowThresholdMs = 500)
     public List<Voyage> findAvailableVoyages(int minCapacityTeu) {
         log.debug("Finding voyages with capacity >= {} TEU", minCapacityTeu);

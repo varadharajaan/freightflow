@@ -119,8 +119,10 @@ public class Voyage {
         }
         if (teuRequired > remainingCapacityTeu) {
             throw new ConflictException(
+                    "INSUFFICIENT_CAPACITY",
                     "Insufficient capacity on voyage %s: requested=%d, remaining=%d".formatted(
-                            voyageId, teuRequired, remainingCapacityTeu));
+                            voyageId, teuRequired, remainingCapacityTeu),
+                    status.name());
         }
 
         this.remainingCapacityTeu -= teuRequired;

@@ -170,7 +170,7 @@
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>${checkstyle-plugin.version}</version>
                     <configuration>
-                        <configLocation>checkstyle.xml</configLocation>
+                        <configLocation>${maven.multiModuleProjectDirectory}/checkstyle.xml</configLocation>
                         <consoleOutput>true</consoleOutput>
                         <failsOnError>true</failsOnError>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>

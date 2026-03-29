@@ -1,5 +1,7 @@
 package com.freightflow.vesselschedule.application.command;
 
+import com.freightflow.vesselschedule.application.port.CacheInvalidationService;
+import com.freightflow.vesselschedule.application.port.DomainEventPublisher;
 import com.freightflow.vesselschedule.domain.event.VesselEvent;
 import com.freightflow.vesselschedule.domain.model.Voyage;
 import com.freightflow.vesselschedule.domain.port.VoyageRepository;
@@ -35,15 +37,25 @@ public class VesselCommandHandler {
     private static final Logger log = LoggerFactory.getLogger(VesselCommandHandler.class);
 
     private final VoyageRepository voyageRepository;
+    private final DomainEventPublisher domainEventPublisher;
+    private final CacheInvalidationService cacheInvalidationService;
 
     /**
      * Constructor injection — all dependencies are final (Dependency Inversion Principle).
      *
-     * @param voyageRepository the domain port for voyage persistence
+     * @param voyageRepository       the domain port for voyage persistence
+     * @param domainEventPublisher   publishes domain events via outbox
+     * @param cacheInvalidationService central command-side cache invalidation
      */
-    public VesselCommandHandler(VoyageRepository voyageRepository) {
+    public VesselCommandHandler(VoyageRepository voyageRepository,
+                                DomainEventPublisher domainEventPublisher,
+                                CacheInvalidationService cacheInvalidationService) {
         this.voyageRepository = Objects.requireNonNull(voyageRepository,
                 "voyageRepository must not be null");
+        this.domainEventPublisher = Objects.requireNonNull(domainEventPublisher,
+                "domainEventPublisher must not be null");
+        this.cacheInvalidationService = Objects.requireNonNull(cacheInvalidationService,
+                "cacheInvalidationService must not be null");
     }
 
     /**
@@ -66,9 +78,11 @@ public class VesselCommandHandler {
 
         Voyage voyage = loadVoyageOrThrow(voyageId);
         voyage.reserveCapacity(bookingId, teuRequired);
+        List<VesselEvent> events = voyage.pullDomainEvents();
 
         Voyage saved = voyageRepository.save(voyage);
-        List<VesselEvent> events = saved.pullDomainEvents();
+        domainEventPublisher.publishAll(events);
+        invalidateVoyageReadCaches(saved);
 
         log.info("Capacity reserved: voyageId={}, bookingId={}, teu={}, remaining={}",
                 voyageId, bookingId, teuRequired, saved.getRemainingCapacityTeu());
@@ -91,8 +105,11 @@ public class VesselCommandHandler {
 
         Voyage voyage = loadVoyageOrThrow(voyageId);
         voyage.releaseCapacity(teuToRelease);
+        List<VesselEvent> events = voyage.pullDomainEvents();
 
         Voyage saved = voyageRepository.save(voyage);
+        domainEventPublisher.publishAll(events);
+        invalidateVoyageReadCaches(saved);
 
         log.info("Capacity released: voyageId={}, released={}, remaining={}",
                 voyageId, teuToRelease, saved.getRemainingCapacityTeu());
@@ -114,9 +131,11 @@ public class VesselCommandHandler {
 
         Voyage voyage = loadVoyageOrThrow(voyageId);
         voyage.depart();
+        List<VesselEvent> events = voyage.pullDomainEvents();
 
         Voyage saved = voyageRepository.save(voyage);
-        List<VesselEvent> events = saved.pullDomainEvents();
+        domainEventPublisher.publishAll(events);
+        invalidateVoyageReadCaches(saved);
 
         log.info("Voyage departed: voyageId={}, vessel={}, status={}",
                 voyageId, saved.getVesselId(), saved.getStatus());
@@ -138,9 +157,11 @@ public class VesselCommandHandler {
 
         Voyage voyage = loadVoyageOrThrow(voyageId);
         voyage.arrive();
+        List<VesselEvent> events = voyage.pullDomainEvents();
 
         Voyage saved = voyageRepository.save(voyage);
-        List<VesselEvent> events = saved.pullDomainEvents();
+        domainEventPublisher.publishAll(events);
+        invalidateVoyageReadCaches(saved);
 
         log.info("Voyage arrived: voyageId={}, vessel={}, status={}",
                 voyageId, saved.getVesselId(), saved.getStatus());
@@ -154,5 +175,17 @@ public class VesselCommandHandler {
                     log.warn("Voyage not found: voyageId={}", voyageId);
                     return new ResourceNotFoundException("Voyage", voyageId.toString());
                 });
+    }
+
+    /**
+     * Cache invalidation matrix for voyage write operations:
+     * `voyages` -> specific voyage key
+     * `vessel-voyages` -> specific vessel key
+     * `available-routes` -> all entries
+     */
+    private void invalidateVoyageReadCaches(Voyage voyage) {
+        cacheInvalidationService.invalidateVoyage(voyage.getVoyageId());
+        cacheInvalidationService.invalidateVoyagesByVessel(voyage.getVesselId());
+        cacheInvalidationService.invalidateAvailableRoutes();
     }
 }

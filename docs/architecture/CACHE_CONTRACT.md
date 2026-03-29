@@ -107,3 +107,16 @@ the query volume justifies caching.
   by network RTT.
 - **No phantom reads:** Null results are excluded from caching (`unless = "#result == null"`),
   preventing negative caching of not-yet-projected bookings.
+
+---
+
+## Vessel Schedule Service Matrix
+
+Command-side invalidation is centralized in `CentralCacheInvalidationService`.
+
+| Command | `voyages` | `vessel-voyages` | `available-routes` |
+|---|---|---|---|
+| `reserveCapacity` | Evict by `voyageId` | Evict by `vesselId` | Clear all |
+| `releaseCapacity` | Evict by `voyageId` | Evict by `vesselId` | Clear all |
+| `departVoyage` | Evict by `voyageId` | Evict by `vesselId` | Clear all |
+| `arriveVoyage` | Evict by `voyageId` | Evict by `vesselId` | Clear all |
