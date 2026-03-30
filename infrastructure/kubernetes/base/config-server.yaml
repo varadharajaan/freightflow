@@ -32,7 +32,7 @@ spec:
         prometheus.io/port: "8888"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: freightflow
+      serviceAccountName: config-server
       containers:
         - name: config-server
           image: ghcr.io/varadharajaan/freightflow/config-server:latest

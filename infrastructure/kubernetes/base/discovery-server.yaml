@@ -32,7 +32,7 @@ spec:
         prometheus.io/port: "8761"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: freightflow
+      serviceAccountName: discovery-server
       containers:
         - name: discovery-server
           image: ghcr.io/varadharajaan/freightflow/discovery-server:latest

@@ -31,7 +31,7 @@ spec:
         prometheus.io/port: "8086"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: freightflow
+      serviceAccountName: notification-service
       containers:
         - name: notification-service
           image: ghcr.io/varadharajaan/freightflow/notification-service:latest

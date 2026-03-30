@@ -11,6 +11,7 @@ namespace: freightflow
 
 resources:
   - namespace.yaml
+  - service-accounts.yaml
   - config-server.yaml
   - discovery-server.yaml
   - api-gateway.yaml

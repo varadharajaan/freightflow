@@ -31,7 +31,7 @@ spec:
         prometheus.io/port: "8081"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: freightflow
+      serviceAccountName: booking-service
       containers:
         - name: booking-service
           image: ghcr.io/varadharajaan/freightflow/booking-service:latest

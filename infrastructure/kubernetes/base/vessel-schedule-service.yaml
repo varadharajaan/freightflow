@@ -31,7 +31,7 @@ spec:
         prometheus.io/port: "8084"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: freightflow
+      serviceAccountName: vessel-schedule-service
       containers:
         - name: vessel-schedule-service
           image: ghcr.io/varadharajaan/freightflow/vessel-schedule-service:latest

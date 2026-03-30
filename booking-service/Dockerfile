@@ -4,7 +4,7 @@
 # Stage 1: Build with Maven (JDK 21)
 # Stage 2: Run with minimal JRE (distroless)
 #
-# Build: docker build -t freightflow/booking-service:latest .
+# Build: docker build -f booking-service/Dockerfile -t freightflow/booking-service:latest .
 # Run:   docker run -p 8081:8081 freightflow/booking-service:latest
 # ============================================================================
 
@@ -14,25 +14,25 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /build
 
 # Copy Maven wrapper and POM files first (layer caching for dependencies)
-COPY ../mvnw ./
-COPY ../.mvn .mvn
-COPY ../pom.xml ./
-COPY ../freightflow-bom/pom.xml freightflow-bom/
-COPY ../freightflow-parent/pom.xml freightflow-parent/
-COPY ../freightflow-commons/pom.xml freightflow-commons/
-COPY ../freightflow-commons/commons-domain/pom.xml freightflow-commons/commons-domain/
-COPY ../freightflow-commons/commons-events/pom.xml freightflow-commons/commons-events/
-COPY ../freightflow-commons/commons-security/pom.xml freightflow-commons/commons-security/
-COPY ../freightflow-commons/commons-observability/pom.xml freightflow-commons/commons-observability/
-COPY ../freightflow-commons/commons-exception/pom.xml freightflow-commons/commons-exception/
-COPY ../freightflow-commons/commons-testing/pom.xml freightflow-commons/commons-testing/
+COPY mvnw ./
+COPY .mvn .mvn
+COPY pom.xml ./
+COPY freightflow-bom/pom.xml freightflow-bom/
+COPY freightflow-parent/pom.xml freightflow-parent/
+COPY freightflow-commons/pom.xml freightflow-commons/
+COPY freightflow-commons/commons-domain/pom.xml freightflow-commons/commons-domain/
+COPY freightflow-commons/commons-events/pom.xml freightflow-commons/commons-events/
+COPY freightflow-commons/commons-security/pom.xml freightflow-commons/commons-security/
+COPY freightflow-commons/commons-observability/pom.xml freightflow-commons/commons-observability/
+COPY freightflow-commons/commons-exception/pom.xml freightflow-commons/commons-exception/
+COPY freightflow-commons/commons-testing/pom.xml freightflow-commons/commons-testing/
 COPY booking-service/pom.xml booking-service/
 
 # Download dependencies (cached unless POM changes)
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -B -ntp -pl booking-service -am
 
 # Copy source code
-COPY ../freightflow-commons freightflow-commons
+COPY freightflow-commons freightflow-commons
 COPY booking-service booking-service
 
 # Build the service JAR (skip tests — tests run in CI, not in Docker build)

@@ -31,7 +31,7 @@ spec:
         prometheus.io/port: "8083"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: freightflow
+      serviceAccountName: billing-service
       containers:
         - name: billing-service
           image: ghcr.io/varadharajaan/freightflow/billing-service:latest

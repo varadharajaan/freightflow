@@ -30,7 +30,7 @@ spec:
         prometheus.io/port: "8082"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: freightflow
+      serviceAccountName: tracking-service
       containers:
         - name: tracking-service
           image: ghcr.io/varadharajaan/freightflow/tracking-service:latest

@@ -61,6 +61,7 @@ FreightFlow uses [Kustomize](https://kustomize.io/) for environment-specific con
 infrastructure/kubernetes/base/
 ├── kustomization.yaml          # Aggregates all resources
 ├── namespace.yaml              # freightflow namespace
+├── service-accounts.yaml       # per-service Kubernetes identities
 ├── network-policy.yaml         # NetworkPolicies (internal + Prometheus)
 ├── api-gateway.yaml            # Deployment + Service + HPA + PDB
 ├── booking-service.yaml
@@ -116,6 +117,7 @@ infrastructure/helm/freightflow/
 ├── values.yaml                 # Default values (all services)
 └── templates/
     ├── deployment.yaml         # Templated Deployment (iterates services)
+    ├── serviceaccount.yaml     # Templated per-service ServiceAccounts
     ├── service.yaml            # Templated Service
     ├── hpa.yaml                # Templated HPA
     └── ingress.yaml            # NGINX Ingress -> api-gateway
@@ -203,11 +205,11 @@ Fine-grained access control at the mesh level, enforcing the inter-service commu
 
 | Source | Allowed Destinations | Reason |
 |---|---|---|
-| api-gateway | ALL services | Routes all client requests |
+| api-gateway | booking, tracking, billing, vessel, customer, notification | Routes client requests |
 | booking-service | vessel-schedule-service, customer-service | Capacity check, customer validation |
 | billing-service | customer-service | Contract pricing lookup |
-| ALL services | discovery-server | Eureka registration |
-| ALL services | config-server | Centralized configuration |
+| platform services (explicit principals) | discovery-server | Eureka registration |
+| platform services (explicit principals) | config-server | Centralized configuration |
 | monitoring namespace | ALL services (GET /actuator/*) | Prometheus scraping |
 | notification-service | (none — pure Kafka consumer) | No outbound REST calls |
 

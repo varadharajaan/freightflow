@@ -1,190 +1,224 @@
-# =============================================================================
-# FreightFlow — Istio Authorization Policies
-# =============================================================================
-# Defines which services can communicate with which other services.
-# Based on the inter-service communication map from MICROSERVICES_GUIDE.md.
-#
-# REST call map (synchronous):
-#   api-gateway       -> ALL services (routes all client requests)
-#   booking-service   -> vessel-schedule-service (capacity check)
-#   booking-service   -> customer-service (validate customer + credit limit)
-#   billing-service   -> customer-service (get contract pricing)
-#   ALL services      -> discovery-server (Eureka registration)
-#   ALL services      -> config-server (centralized configuration)
-#
-# notification-service is a pure Kafka consumer — no outbound REST calls.
-# tracking-service has no business reason to call billing-service via REST.
-# =============================================================================
-
-# --- Default deny all traffic in freightflow namespace ---
+# Default deny all traffic in freightflow namespace.
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
   name: deny-all
   namespace: freightflow
-spec:
-  {}
+spec: {}
 ---
-# --- api-gateway: can call ALL services (routes external traffic) ---
+# External ingress traffic is allowed only via the ingress gateway service account.
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: allow-from-api-gateway
+  name: allow-ingress-to-api-gateway
   namespace: freightflow
 spec:
   action: ALLOW
-  rules:
-    - from:
-        - source:
-            principals:
-              - "cluster.local/ns/freightflow/sa/freightflow"
-      when:
-        - key: source.principal
-          values:
-            - "cluster.local/ns/freightflow/sa/freightflow"
-      to:
-        - operation:
-            methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-  selector:
-    matchLabels:
-      app: booking-service
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-gateway-to-tracking
-  namespace: freightflow
-spec:
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            principals:
-              - "cluster.local/ns/freightflow/sa/freightflow"
-  selector:
-    matchLabels:
-      app: tracking-service
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-gateway-to-billing
-  namespace: freightflow
-spec:
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            principals:
-              - "cluster.local/ns/freightflow/sa/freightflow"
-  selector:
-    matchLabels:
-      app: billing-service
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-gateway-to-vessel
-  namespace: freightflow
-spec:
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            principals:
-              - "cluster.local/ns/freightflow/sa/freightflow"
-  selector:
-    matchLabels:
-      app: vessel-schedule-service
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-gateway-to-customer
-  namespace: freightflow
-spec:
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            principals:
-              - "cluster.local/ns/freightflow/sa/freightflow"
-  selector:
-    matchLabels:
-      app: customer-service
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-gateway-to-notification
-  namespace: freightflow
-spec:
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            principals:
-              - "cluster.local/ns/freightflow/sa/freightflow"
-  selector:
-    matchLabels:
-      app: notification-service
----
-# --- discovery-server: all services can register and fetch registry ---
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-all-to-discovery
-  namespace: freightflow
-spec:
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            namespaces:
-              - "freightflow"
-  selector:
-    matchLabels:
-      app: discovery-server
----
-# --- config-server: all services can fetch configuration ---
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-all-to-config
-  namespace: freightflow
-spec:
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            namespaces:
-              - "freightflow"
-  selector:
-    matchLabels:
-      app: config-server
----
-# --- api-gateway: allow external traffic from Istio ingress gateway ---
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-ingress-to-gateway
-  namespace: freightflow
-spec:
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            namespaces:
-              - "istio-system"
-    - from:
-        - source:
-            namespaces:
-              - "freightflow"
   selector:
     matchLabels:
       app: api-gateway
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
 ---
-# --- Prometheus scraping: allow from monitoring namespace ---
+# api-gateway can route requests to business services.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway-to-booking
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: booking-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/api-gateway"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway-to-tracking
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: tracking-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/api-gateway"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway-to-billing
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: billing-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/api-gateway"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway-to-vessel
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: vessel-schedule-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/api-gateway"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway-to-customer
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: customer-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/api-gateway"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway-to-notification
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: notification-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/api-gateway"
+---
+# Explicit east-west calls between internal services.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-booking-to-vessel
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: vessel-schedule-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/booking-service"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-booking-to-customer
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: customer-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/booking-service"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-billing-to-customer
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: customer-service
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/billing-service"
+---
+# All platform services can read config and register with discovery.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-services-to-discovery
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: discovery-server
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/api-gateway"
+              - "cluster.local/ns/freightflow/sa/booking-service"
+              - "cluster.local/ns/freightflow/sa/tracking-service"
+              - "cluster.local/ns/freightflow/sa/billing-service"
+              - "cluster.local/ns/freightflow/sa/vessel-schedule-service"
+              - "cluster.local/ns/freightflow/sa/customer-service"
+              - "cluster.local/ns/freightflow/sa/notification-service"
+              - "cluster.local/ns/freightflow/sa/config-server"
+              - "cluster.local/ns/freightflow/sa/discovery-server"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-services-to-config
+  namespace: freightflow
+spec:
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: config-server
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/freightflow/sa/api-gateway"
+              - "cluster.local/ns/freightflow/sa/booking-service"
+              - "cluster.local/ns/freightflow/sa/tracking-service"
+              - "cluster.local/ns/freightflow/sa/billing-service"
+              - "cluster.local/ns/freightflow/sa/vessel-schedule-service"
+              - "cluster.local/ns/freightflow/sa/customer-service"
+              - "cluster.local/ns/freightflow/sa/notification-service"
+              - "cluster.local/ns/freightflow/sa/config-server"
+              - "cluster.local/ns/freightflow/sa/discovery-server"
+---
+# Prometheus scraping from the monitoring namespace for actuator endpoints.
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:

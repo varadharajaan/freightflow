@@ -32,7 +32,7 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: freightflow
+      serviceAccountName: api-gateway
       containers:
         - name: api-gateway
           image: ghcr.io/varadharajaan/freightflow/api-gateway:latest

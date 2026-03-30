@@ -37,7 +37,7 @@ spec:
         prometheus.io/port: "{{ $svc.port }}"
         prometheus.io/path: "/actuator/prometheus"
     spec:
-      serviceAccountName: {{ $.Values.global.serviceAccountName }}
+      serviceAccountName: {{ default $name $svc.serviceAccountName }}
       containers:
         - name: {{ $name }}
           image: "{{ $.Values.global.imageRegistry }}/{{ $name }}:{{ $.Values.global.imageTag }}"
