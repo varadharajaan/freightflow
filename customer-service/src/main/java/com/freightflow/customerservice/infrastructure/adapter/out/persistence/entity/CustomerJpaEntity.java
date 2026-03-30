@@ -127,6 +127,13 @@ public class CustomerJpaEntity {
         // JPA requires a no-arg constructor
     }
 
+    /**
+     * Factory for infrastructure mappers outside this package.
+     */
+    public static CustomerJpaEntity createForMapping() {
+        return new CustomerJpaEntity();
+    }
+
     // ==================== Getters and Setters ====================
     // Required by JPA — the mapper uses these to populate the entity.
     // No business logic here — that belongs in the domain model.

@@ -43,7 +43,7 @@ public class CustomerEntityMapper {
         log.trace("Mapping domain Customer to JPA entity: customerId={}",
                 customer.getCustomerId().asString());
 
-        var entity = new CustomerJpaEntity();
+        var entity = CustomerJpaEntity.createForMapping();
         entity.setId(customer.getCustomerId().value());
         entity.setCompanyName(customer.getCompanyName());
         entity.setEmail(customer.getEmail());

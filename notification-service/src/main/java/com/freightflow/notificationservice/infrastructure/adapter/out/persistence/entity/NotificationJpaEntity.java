@@ -108,6 +108,13 @@ public class NotificationJpaEntity {
         // JPA requires a no-arg constructor
     }
 
+    /**
+     * Factory for infrastructure mappers outside this package.
+     */
+    public static NotificationJpaEntity createForMapping() {
+        return new NotificationJpaEntity();
+    }
+
     // ==================== Getters and Setters ====================
 
     public UUID getId() { return id; }

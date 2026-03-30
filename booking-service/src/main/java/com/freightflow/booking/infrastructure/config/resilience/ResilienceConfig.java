@@ -4,6 +4,7 @@ import io.github.resilience4j.bulkhead.BulkheadConfig;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Programmatic Resilience4j configuration for the booking service.
@@ -93,13 +95,15 @@ public class ResilienceConfig {
                 .slowCallDurationThreshold(Duration.ofSeconds(1))
                 .build();
 
-        return CircuitBreakerRegistry.of(defaultConfig,
-                io.vavr.collection.HashMap.of(
-                        "vesselScheduleService", defaultConfig,
-                        "billingService", criticalConfig,
-                        "trackingService", defaultConfig,
-                        "paymentGateway", criticalConfig
-                ).toJavaMap());
+        Map<String, CircuitBreakerConfig> configs = Map.of(
+                "default", defaultConfig,
+                "vesselScheduleService", defaultConfig,
+                "billingService", criticalConfig,
+                "trackingService", defaultConfig,
+                "notificationService", defaultConfig,
+                "paymentGateway", criticalConfig
+        );
+        return CircuitBreakerRegistry.of(configs, Map.of());
     }
 
     // ==================== Retry ====================
@@ -122,9 +126,7 @@ public class ResilienceConfig {
 
         RetryConfig defaultConfig = RetryConfig.custom()
                 .maxAttempts(3)
-                .waitDuration(Duration.ofSeconds(1))
-                .enableExponentialBackoff()
-                .exponentialBackoffMultiplier(2.0)
+                .intervalFunction(IntervalFunction.ofExponentialBackoff(Duration.ofSeconds(1), 2.0))
                 .retryExceptions(
                         java.io.IOException.class,
                         java.util.concurrent.TimeoutException.class,
@@ -164,10 +166,12 @@ public class ResilienceConfig {
                 .maxWaitDuration(Duration.ofMillis(200))
                 .build();
 
-        return BulkheadRegistry.of(defaultConfig,
-                io.vavr.collection.HashMap.of(
-                        "paymentGateway", criticalConfig
-                ).toJavaMap());
+        Map<String, BulkheadConfig> configs = Map.of(
+                "default", defaultConfig,
+                "vesselScheduleService", defaultConfig,
+                "paymentGateway", criticalConfig
+        );
+        return BulkheadRegistry.of(configs, Map.of());
     }
 
     // ==================== Time Limiter ====================
@@ -189,9 +193,11 @@ public class ResilienceConfig {
                 .cancelRunningFuture(true)
                 .build();
 
-        return TimeLimiterRegistry.of(defaultConfig,
-                io.vavr.collection.HashMap.of(
-                        "paymentGateway", strictConfig
-                ).toJavaMap());
+        Map<String, TimeLimiterConfig> configs = Map.of(
+                "default", defaultConfig,
+                "vesselScheduleService", defaultConfig,
+                "paymentGateway", strictConfig
+        );
+        return TimeLimiterRegistry.of(configs, Map.of());
     }
 }

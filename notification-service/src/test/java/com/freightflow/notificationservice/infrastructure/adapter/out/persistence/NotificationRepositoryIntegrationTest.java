@@ -22,7 +22,7 @@ class NotificationRepositoryIntegrationTest {
     void shouldPersistAndQueryNotificationsByRecipient() {
         UUID recipientId = UUID.randomUUID();
 
-        NotificationJpaEntity entity = new NotificationJpaEntity();
+        NotificationJpaEntity entity = NotificationJpaEntity.createForMapping();
         entity.setId(UUID.randomUUID());
         entity.setRecipientId(recipientId);
         entity.setChannelType("EmailChannel");

@@ -21,7 +21,7 @@ class CustomerRepositoryIntegrationTest {
 
     @Test
     void shouldPersistAndFindCustomerByEmail() {
-        CustomerJpaEntity customer = new CustomerJpaEntity();
+        CustomerJpaEntity customer = CustomerJpaEntity.createForMapping();
         customer.setId(UUID.randomUUID());
         customer.setCompanyName("Acme Logistics");
         customer.setEmail("ops@acme.test");

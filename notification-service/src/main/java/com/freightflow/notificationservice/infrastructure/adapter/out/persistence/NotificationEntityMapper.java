@@ -44,7 +44,7 @@ public class NotificationEntityMapper {
         log.trace("Mapping domain Notification to JPA entity: notificationId={}",
                 notification.getNotificationId());
 
-        var entity = new NotificationJpaEntity();
+        var entity = NotificationJpaEntity.createForMapping();
         entity.setId(notification.getNotificationId());
         entity.setRecipientId(notification.getRecipientId());
 

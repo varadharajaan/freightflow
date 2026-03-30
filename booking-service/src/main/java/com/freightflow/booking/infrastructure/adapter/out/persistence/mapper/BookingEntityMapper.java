@@ -46,7 +46,7 @@ public class BookingEntityMapper {
     public BookingJpaEntity toEntity(Booking booking) {
         log.trace("Mapping domain Booking to JPA entity: bookingId={}", booking.getId().asString());
 
-        var entity = new BookingJpaEntity();
+        var entity = BookingJpaEntity.createForMapping();
         entity.setId(booking.getId().value());
         entity.setCustomerId(booking.getCustomerId().value());
         entity.setStatus(booking.getStatus().name());

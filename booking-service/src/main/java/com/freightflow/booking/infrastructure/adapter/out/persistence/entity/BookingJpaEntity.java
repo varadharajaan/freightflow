@@ -153,6 +153,13 @@ public class BookingJpaEntity {
         // JPA requires a no-arg constructor
     }
 
+    /**
+     * Factory for infrastructure mappers outside this package.
+     */
+    public static BookingJpaEntity createForMapping() {
+        return new BookingJpaEntity();
+    }
+
     // ==================== Getters and Setters ====================
     // Required by JPA — the mapper uses these to populate the entity.
     // No business logic here — that belongs in the domain model.
