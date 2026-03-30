@@ -143,4 +143,12 @@ eureka:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${random.value}
 
+# =============================================================================
+# WebSocket — Real-Time Container Tracking
+# =============================================================================
+# WebSocket configuration is handled programmatically by @EnableWebSocketMessageBroker
+# in TrackingWebSocketConfig. STOMP endpoint: /ws/tracking (SockJS fallback enabled).
+# Subscription topic: /topic/tracking/{containerId}
+# SSE alternative: GET /api/v1/tracking/stream/{containerId}
+
 
