@@ -141,8 +141,8 @@ class WeightTest {
                     Arguments.of(new BigDecimal("1"), new BigDecimal("0.453592")),
                     // 1000 LBS ≈ 453.592370 KG
                     Arguments.of(new BigDecimal("1000"), new BigDecimal("453.592370")),
-                    // 2204.62 LBS ≈ 999.998952 KG (close to 1000 KG)
-                    Arguments.of(new BigDecimal("2204.62"), new BigDecimal("999.998952"))
+                    // 2204.62 LBS ≈ 999.998811 KG (close to 1000 KG)
+                    Arguments.of(new BigDecimal("2204.62"), new BigDecimal("999.998811"))
             );
         }
     }
