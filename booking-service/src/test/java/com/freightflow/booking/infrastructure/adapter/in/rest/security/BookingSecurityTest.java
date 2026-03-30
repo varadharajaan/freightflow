@@ -112,7 +112,6 @@ class BookingSecurityTest {
         void should_Return401_When_NoTokenOnCreate() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL)
                             .with(csrf())
-                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"customerId\":\"test\"}"))
                     .andExpect(status().isUnauthorized());
@@ -123,7 +122,6 @@ class BookingSecurityTest {
         void should_Return401_When_NoTokenOnConfirm() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
                             .with(csrf())
-                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"voyageId\":\"" + VOYAGE_ID + "\"}"))
                     .andExpect(status().isUnauthorized());
@@ -133,7 +131,6 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for DELETE /api/v1/bookings/{id}")
         void should_Return401_When_NoTokenOnCancel() throws Exception {
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
-                            .with(csrf())
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"test cancellation\"}"))
