@@ -65,4 +65,15 @@
 
     </dependencies>
 
+    <!-- ==================== Build ==================== -->
+    <build>
+        <plugins>
+            <!-- Ensure jacoco.agent.arg is initialized for surefire argLine -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
