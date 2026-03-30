@@ -87,6 +87,11 @@
             <artifactId>commons-exception</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.freightflow</groupId>
+            <artifactId>commons-security</artifactId>
+        </dependency>
+
         <!-- ── Database ── -->
         <dependency>
             <groupId>org.postgresql</groupId>
