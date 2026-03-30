@@ -2,6 +2,7 @@ package com.freightflow.booking.infrastructure.adapter.in.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.freightflow.booking.application.BookingService;
+import com.freightflow.booking.application.saga.BookingConfirmationSaga;
 import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.domain.model.BookingStatus;
 import com.freightflow.booking.domain.model.Cargo;
@@ -18,7 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.bean.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -65,6 +66,9 @@ class BookingControllerTest {
 
     @MockBean
     private BookingService bookingService;
+
+    @MockBean
+    private BookingConfirmationSaga bookingConfirmationSaga;
 
     // ==================== Test Fixtures ====================
 

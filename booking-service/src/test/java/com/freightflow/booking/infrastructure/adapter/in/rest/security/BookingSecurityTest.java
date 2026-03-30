@@ -2,6 +2,7 @@ package com.freightflow.booking.infrastructure.adapter.in.rest.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.freightflow.booking.application.BookingService;
+import com.freightflow.booking.application.saga.BookingConfirmationSaga;
 import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.domain.model.BookingStatus;
 import com.freightflow.booking.domain.model.Cargo;
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.bean.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -29,7 +30,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -74,10 +74,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BookingSecurityTest {
 
     private static final String BOOKINGS_URL = "/api/v1/bookings";
-    private static final String BOOKING_ID = UUID.randomUUID().toString();
-    private static final String CUSTOMER_ID = UUID.randomUUID().toString();
-    private static final String OTHER_CUSTOMER_ID = UUID.randomUUID().toString();
-    private static final String VOYAGE_ID = UUID.randomUUID().toString();
+    // Using fixed UUIDs for compile-time constant requirement in @WithMockUser annotation
+    private static final String BOOKING_ID = "b1a2c3d4-e5f6-7890-abcd-ef1234567890";
+    private static final String CUSTOMER_ID = "c1a2b3c4-d5e6-f789-0abc-def123456789";
+    private static final String OTHER_CUSTOMER_ID = "d1e2f3a4-b5c6-7890-1234-abcdef123456";
+    private static final String VOYAGE_ID = "v1o2y3a4-g5e6-7890-abcd-123456789abc";
 
     @Autowired
     private MockMvc mockMvc;
@@ -87,6 +88,9 @@ class BookingSecurityTest {
 
     @MockBean
     private BookingService bookingService;
+
+    @MockBean
+    private BookingConfirmationSaga bookingConfirmationSaga;
 
     // ==================== Authentication Tests ====================
 
