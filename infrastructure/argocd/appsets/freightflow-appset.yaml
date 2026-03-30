@@ -1,0 +1,68 @@
+# =============================================================================
+# FreightFlow — ArgoCD ApplicationSet (Multi-Environment)
+# =============================================================================
+# Generates one ArgoCD Application per environment (dev, staging, prod).
+# Each environment uses its own Kustomize overlay and namespace.
+#
+# Dev/Staging: automated sync (push-to-deploy)
+# Prod: manual sync (requires explicit approval)
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: freightflow-environments
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: freightflow
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            overlay: dev
+            autoSync: "true"
+          - env: staging
+            overlay: staging
+            autoSync: "true"
+          - env: prod
+            overlay: prod
+            autoSync: "false"
+  template:
+    metadata:
+      name: "freightflow-{{env}}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/part-of: freightflow
+        app.kubernetes.io/instance: "freightflow-{{env}}"
+        environment: "{{env}}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: freightflow
+      source:
+        repoURL: https://github.com/varadharajaan/freightflow.git
+        targetRevision: main
+        path: "infrastructure/kubernetes/overlays/{{overlay}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "freightflow-{{env}}"
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
+          - ApplyOutOfSyncOnly=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+  templatePatch: |
+    {{- if eq .autoSync "true" }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+    {{- end }}

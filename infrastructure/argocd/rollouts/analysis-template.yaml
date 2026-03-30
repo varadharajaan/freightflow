@@ -1,0 +1,133 @@
+# =============================================================================
+# FreightFlow — Argo Rollouts AnalysisTemplates
+# =============================================================================
+# Prometheus-based analysis gates for canary deployments.
+# Uses real Spring Boot Micrometer metrics exposed at /actuator/prometheus.
+#
+# Metrics used:
+#   - http_server_requests_seconds_count (Micrometer HTTP request counter)
+#   - http_server_requests_seconds_bucket (Micrometer HTTP request histogram)
+#
+# These are the standard metric names produced by Spring Boot 3.x with
+# Micrometer and the Prometheus registry (micrometer-registry-prometheus).
+# =============================================================================
+
+# --- Analysis Template: HTTP Success Rate ---
+# Passes if >95% of HTTP responses have status < 500 over a 5-minute window.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+  namespace: freightflow
+  labels:
+    app.kubernetes.io/part-of: freightflow
+spec:
+  args:
+    - name: service-name
+    - name: namespace
+  metrics:
+    - name: success-rate
+      interval: 1m
+      count: 5
+      successCondition: result[0] >= 0.95
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            sum(
+              rate(
+                http_server_requests_seconds_count{
+                  namespace="{{args.namespace}}",
+                  job="{{args.service-name}}",
+                  status!~"5.."
+                }[5m]
+              )
+            )
+            /
+            sum(
+              rate(
+                http_server_requests_seconds_count{
+                  namespace="{{args.namespace}}",
+                  job="{{args.service-name}}"
+                }[5m]
+              )
+            )
+---
+# --- Analysis Template: P99 Latency Check ---
+# Passes if the 99th percentile response time is under 2 seconds
+# over a 5-minute window.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: latency-check
+  namespace: freightflow
+  labels:
+    app.kubernetes.io/part-of: freightflow
+spec:
+  args:
+    - name: service-name
+    - name: namespace
+  metrics:
+    - name: p99-latency
+      interval: 1m
+      count: 5
+      successCondition: result[0] <= 2.0
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            histogram_quantile(
+              0.99,
+              sum(
+                rate(
+                  http_server_requests_seconds_bucket{
+                    namespace="{{args.namespace}}",
+                    job="{{args.service-name}}"
+                  }[5m]
+                )
+              ) by (le)
+            )
+---
+# --- Analysis Template: Error Rate Spike Detection ---
+# Passes if the error rate does not spike above 5% during canary rollout.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate
+  namespace: freightflow
+  labels:
+    app.kubernetes.io/part-of: freightflow
+spec:
+  args:
+    - name: service-name
+    - name: namespace
+  metrics:
+    - name: error-rate
+      interval: 1m
+      count: 5
+      successCondition: result[0] <= 0.05
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            sum(
+              rate(
+                http_server_requests_seconds_count{
+                  namespace="{{args.namespace}}",
+                  job="{{args.service-name}}",
+                  status=~"5.."
+                }[5m]
+              )
+            )
+            /
+            sum(
+              rate(
+                http_server_requests_seconds_count{
+                  namespace="{{args.namespace}}",
+                  job="{{args.service-name}}"
+                }[5m]
+              )
+            )

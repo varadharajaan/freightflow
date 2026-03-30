@@ -1,0 +1,34 @@
+# =============================================================================
+# FreightFlow — ArgoCD AppProject
+# =============================================================================
+# Scoped project that restricts which repos and namespaces FreightFlow
+# applications can use. All service Applications reference this project.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: freightflow
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: freightflow
+spec:
+  description: FreightFlow microservices platform
+  sourceRepos:
+    - https://github.com/varadharajaan/freightflow.git
+  destinations:
+    - namespace: freightflow
+      server: https://kubernetes.default.svc
+    - namespace: freightflow-dev
+      server: https://kubernetes.default.svc
+    - namespace: freightflow-staging
+      server: https://kubernetes.default.svc
+    - namespace: freightflow-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  orphanedResources:
+    warn: true

@@ -1,0 +1,176 @@
+# =============================================================================
+# FreightFlow Tracking Service — Argo Rollout (Canary)
+# =============================================================================
+# Pod template mirrors infrastructure/kubernetes/base/tracking-service.yaml.
+# Port: 8082
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: tracking-service
+  namespace: freightflow
+  labels:
+    app: tracking-service
+    app.kubernetes.io/name: tracking-service
+    app.kubernetes.io/part-of: freightflow
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: tracking-service
+  template:
+    metadata:
+      labels:
+        app: tracking-service
+        app.kubernetes.io/name: tracking-service
+        app.kubernetes.io/part-of: freightflow
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8082"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      serviceAccountName: freightflow
+      containers:
+        - name: tracking-service
+          image: ghcr.io/varadharajaan/freightflow/tracking-service:latest
+          ports:
+            - containerPort: 8082
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tracking-db-credentials
+                  key: url
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tracking-db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tracking-db-credentials
+                  key: password
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: bootstrap-servers
+            - name: EUREKA_HOST
+              value: "discovery-server"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://jaeger-collector:4318/v1/traces"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+  strategy:
+    canary:
+      canaryService: tracking-service-canary
+      stableService: tracking-service-stable
+      trafficRouting:
+        istio:
+          virtualServices:
+            - name: tracking-service-vs
+              routes:
+                - primary
+      steps:
+        - setWeight: 10
+        - pause: {duration: 2m}
+        - setWeight: 30
+        - pause: {duration: 2m}
+        - setWeight: 60
+        - pause: {duration: 2m}
+        - setWeight: 100
+      analysis:
+        templates:
+          - templateName: success-rate
+          - templateName: latency-check
+        startingStep: 2
+        args:
+          - name: service-name
+            value: tracking-service
+          - name: namespace
+            value: freightflow
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracking-service-stable
+  namespace: freightflow
+  labels:
+    app: tracking-service
+    role: stable
+spec:
+  selector:
+    app: tracking-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracking-service-canary
+  namespace: freightflow
+  labels:
+    app: tracking-service
+    role: canary
+spec:
+  selector:
+    app: tracking-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+      name: http
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: tracking-service-vs
+  namespace: freightflow
+spec:
+  hosts:
+    - tracking-service
+  http:
+    - name: primary
+      route:
+        - destination:
+            host: tracking-service-stable
+            port:
+              number: 8082
+          weight: 100
+        - destination:
+            host: tracking-service-canary
+            port:
+              number: 8082
+          weight: 0
