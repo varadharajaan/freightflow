@@ -1,0 +1,25 @@
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+locals {
+  env = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+}
+
+dependency "network" {
+  config_path = "../network"
+}
+
+terraform {
+  source = "../../../../modules/msk"
+}
+
+inputs = merge(include.root.inputs, {
+  name                   = "${local.env.locals.project}-${local.env.locals.environment}"
+  vpc_id                 = dependency.network.outputs.vpc_id
+  subnet_ids             = dependency.network.outputs.private_subnet_ids
+  allowed_cidr_blocks    = [dependency.network.outputs.vpc_cidr_block]
+  number_of_broker_nodes = 3
+  broker_instance_type   = "kafka.m5.large"
+  ebs_volume_size        = 200
+})

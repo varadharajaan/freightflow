@@ -126,6 +126,33 @@ jobs:
         run: ./mvnw org.owasp:dependency-check-maven:check -B -ntp -DfailBuildOnCVSS=9 || true
 
   # ---------------------------------------------------------------------------
+  # Stage 3c: Infrastructure as Code Validation (Terraform + tfsec)
+  # ---------------------------------------------------------------------------
+  iac-validate:
+    name: IaC Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive infrastructure/terraform
+      - name: Terraform Validate (modules + bootstrap)
+        run: |
+          for dir in infrastructure/terraform/modules/* infrastructure/terraform/bootstrap/*; do
+            if [ -d "$dir" ]; then
+              terraform -chdir="$dir" init -backend=false
+              terraform -chdir="$dir" validate
+            fi
+          done
+      - name: tfsec Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: infrastructure/terraform
+
+  # ---------------------------------------------------------------------------
   # Stage 4: Docker Build & Push (main/master only, per-service matrix)
   # ---------------------------------------------------------------------------
   docker-build:

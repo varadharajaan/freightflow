@@ -1,0 +1,9 @@
+severity_overrides:
+  aws-s3-enable-bucket-logging: MEDIUM
+  aws-s3-specify-public-access-block: HIGH
+  aws-rds-enable-performance-insights: MEDIUM
+
+exclude:
+  - aws-s3-enable-bucket-logging
+
+soft_fail: false
