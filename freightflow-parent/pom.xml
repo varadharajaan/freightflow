@@ -36,6 +36,8 @@
         <mapstruct.version>1.6.2</mapstruct.version>
         <jib-plugin.version>3.4.4</jib-plugin.version>
         <springdoc-plugin.version>1.8.0</springdoc-plugin.version>
+        <spring-cloud-contract-plugin.version>4.1.4</spring-cloud-contract-plugin.version>
+        <gatling-maven-plugin.version>4.9.6</gatling-maven-plugin.version>
 
         <!-- Quality thresholds -->
         <jacoco.line.coverage>0.80</jacoco.line.coverage>
@@ -226,6 +228,27 @@
                     </configuration>
                 </plugin>
 
+                <!-- ==================== Spring Cloud Contract ==================== -->
+                <plugin>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                    <version>${spring-cloud-contract-plugin.version}</version>
+                    <configuration>
+                        <testFramework>JUNIT5</testFramework>
+                        <failOnNoContracts>false</failOnNoContracts>
+                    </configuration>
+                </plugin>
+
+                <!-- ==================== Gatling Performance ==================== -->
+                <plugin>
+                    <groupId>io.gatling</groupId>
+                    <artifactId>gatling-maven-plugin</artifactId>
+                    <version>${gatling-maven-plugin.version}</version>
+                    <configuration>
+                        <failOnError>true</failOnError>
+                    </configuration>
+                </plugin>
+
                 <!-- ==================== Docker (Jib) ==================== -->
                 <plugin>
                     <groupId>com.google.cloud.tools</groupId>
@@ -321,6 +344,49 @@
                                 <phase>verify</phase>
                                 <goals>
                                     <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Contract test profile -->
+        <profile>
+            <id>contract-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.cloud</groupId>
+                        <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>generateTests</goal>
+                                    <goal>verifierStubsJar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Performance profile -->
+        <profile>
+            <id>performance-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.gatling</groupId>
+                        <artifactId>gatling-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>test</goal>
                                 </goals>
                             </execution>
                         </executions>

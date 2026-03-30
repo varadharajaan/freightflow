@@ -51,6 +51,12 @@ Establish a principal-level testing baseline with clear layering and enforceable
 
 # Mutation tests (example: booking service)
 ./mvnw -pl booking-service org.pitest:pitest-maven:mutationCoverage
+
+# Contract tests (enable profile)
+./mvnw -Pcontract-tests test
+
+# Performance tests (enable profile, add Gatling simulations per service)
+./mvnw -Pperformance-tests verify
 ```
 
 ## Next Rollout (Incremental)

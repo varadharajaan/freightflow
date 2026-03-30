@@ -59,6 +59,8 @@
 
         <!-- Documentation -->
         <springdoc.version>2.6.0</springdoc.version>
+        <spring-cloud-contract.version>4.1.4</spring-cloud-contract.version>
+        <gatling.version>3.12.0</gatling.version>
 
         <!-- Scheduling -->
         <shedlock.version>5.16.0</shedlock.version>
@@ -269,6 +271,30 @@
                 <groupId>org.wiremock</groupId>
                 <artifactId>wiremock-standalone</artifactId>
                 <version>${wiremock.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-contract-verifier</artifactId>
+                <version>${spring-cloud-contract.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-contract-wiremock</artifactId>
+                <version>${spring-cloud-contract.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-contract-stub-runner</artifactId>
+                <version>${spring-cloud-contract.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.gatling.highcharts</groupId>
+                <artifactId>gatling-charts-highcharts</artifactId>
+                <version>${gatling.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
