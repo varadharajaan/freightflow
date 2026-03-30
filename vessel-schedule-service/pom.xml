@@ -87,6 +87,11 @@
             <artifactId>commons-exception</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.freightflow</groupId>
+            <artifactId>commons-security</artifactId>
+        </dependency>
+
         <!-- ── Caching ── -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
