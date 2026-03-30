@@ -108,6 +108,10 @@ jobs:
       - name: SpotBugs
         run: ./mvnw spotbugs:check -B -ntp || true
 
+      - name: PIT Mutation Smoke (booking-service)
+        continue-on-error: true
+        run: ./mvnw -pl booking-service org.pitest:pitest-maven:mutationCoverage -B -ntp -DskipITs=true
+
   # ---------------------------------------------------------------------------
   # Stage 3b: Security Scan (parallel with code quality)
   # ---------------------------------------------------------------------------
