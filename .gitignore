@@ -93,3 +93,10 @@ native-image/
 coverage/
 *.exec
 jacoco.exec
+
+# Terraform state and local files
+**/.terraform/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+
