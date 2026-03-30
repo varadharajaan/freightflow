@@ -40,6 +40,21 @@ Establish a principal-level testing baseline with clear layering and enforceable
 - PIT plugin managed in parent POM with mutation threshold set to 70%.
 - Use module-focused mutation runs to control CI time.
 
+### Contract
+
+- First producer contract added for API Gateway health endpoint:
+  - [should_return_health_up.groovy](C:/Users/vdamotharan/Desktop/freightflow/api-gateway/src/test/resources/contracts/actuator/should_return_health_up.groovy)
+- Base class for generated verifier tests:
+  - [ContractBaseTest.java](C:/Users/vdamotharan/Desktop/freightflow/api-gateway/src/test/java/com/freightflow/gateway/contract/ContractBaseTest.java)
+
+### Performance
+
+- First Gatling simulation added:
+  - [HealthCheckSimulation.scala](C:/Users/vdamotharan/Desktop/freightflow/api-gateway/src/test/gatling/com/freightflow/gateway/HealthCheckSimulation.scala)
+- Includes assertion baseline:
+  - `p99 < 200ms`
+  - `>99%` successful requests
+
 ## Commands
 
 ```bash
