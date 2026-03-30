@@ -384,6 +384,31 @@ curl http://localhost:8080/actuator/health
 
 ---
 
+## Terraform IaC (T14)
+
+AWS infrastructure provisioning is now managed under:
+
+`infrastructure/terraform/`
+
+- Reusable modules:
+  - `modules/network` (VPC + public/private subnets across 3 AZs)
+  - `modules/eks` (EKS + managed node group + IRSA OIDC)
+  - `modules/rds-postgres`, `modules/msk`, `modules/redis`
+  - `modules/alb`, `modules/secrets`, `modules/state-bootstrap`
+- Terragrunt live stacks:
+  - `live/dev/ap-south-1/*`
+  - `live/prod/ap-south-1/*`
+- Remote state bootstrap:
+  - `bootstrap/dev/main.tf`
+  - `bootstrap/prod/main.tf`
+
+Primary IaC runbook:
+[infrastructure/terraform/README.md](C:/Users/vdamotharan/Desktop/freightflow/infrastructure/terraform/README.md)
+
+This keeps Kubernetes manifests focused on workload/runtime concerns, while Terraform owns foundational AWS infrastructure.
+
+---
+
 ## Monitoring Integration
 
 ### Prometheus Annotations
