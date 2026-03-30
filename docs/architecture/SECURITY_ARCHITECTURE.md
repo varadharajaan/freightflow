@@ -12,10 +12,10 @@ Every microservice operates as an **OAuth2 Resource Server** — it validates in
 
 ```
 ┌──────────┐     ┌─────────────┐     ┌──────────────┐     ┌──────────────────┐
-│  Client   │     │ API Gateway │     │   Keycloak   │     │  Microservice    │
-│ (SPA/App) │     │  (port 8080)│     │ (port 8180)  │     │ (e.g. Booking)   │
-└─────┬─────┘     └──────┬──────┘     └──────┬───────┘     └────────┬─────────┘
-      │                   │                   │                      │
+│  Client  │     │ API Gateway │     │   Keycloak   │     │  Microservice    │
+│ (SPA/App)│     │  (port 8080)│     │ (port 8180)  │     │ (e.g. Booking)   │
+└─────┬────┘     └──────┬──────┘     └──────┬───────┘     └────────┬─────────┘
+      │                 │                   │                      │
       │  1. Login (user/pass)                 │                      │
       │──────────────────────────────────────>│                      │
       │                   │                   │                      │
