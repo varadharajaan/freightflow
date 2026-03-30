@@ -38,7 +38,7 @@ resource "aws_elasticache_replication_group" "this" {
   engine                     = "redis"
   engine_version             = var.engine_version
   node_type                  = var.node_type
-  number_cache_clusters      = var.number_cache_clusters
+  num_cache_clusters         = var.number_cache_clusters
   port                       = 6379
   subnet_group_name          = aws_elasticache_subnet_group.this.name
   security_group_ids         = [aws_security_group.this.id]

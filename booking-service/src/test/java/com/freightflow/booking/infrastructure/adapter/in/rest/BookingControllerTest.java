@@ -291,7 +291,9 @@ class BookingControllerTest {
         @Test
         @DisplayName("should return 200 OK with cancelled booking when valid cancellation")
         void should_Return200_When_ValidCancellation() throws Exception {
-            // Given
+            // Given - mock both getBooking (for security check) and cancelBooking
+            when(bookingService.getBooking(eq(BOOKING_ID)))
+                    .thenReturn(cancelledBooking());
             when(bookingService.cancelBooking(eq(BOOKING_ID), eq("Customer request")))
                     .thenReturn(cancelledBooking());
 
@@ -334,7 +336,7 @@ class BookingControllerTest {
         void should_Return404_When_CancellingNonExistentBooking() throws Exception {
             // Given
             String nonExistentId = UUID.randomUUID().toString();
-            when(bookingService.cancelBooking(eq(nonExistentId), any()))
+            when(bookingService.getBooking(eq(nonExistentId)))
                     .thenThrow(ResourceNotFoundException.forBooking(nonExistentId));
 
             String requestBody = """

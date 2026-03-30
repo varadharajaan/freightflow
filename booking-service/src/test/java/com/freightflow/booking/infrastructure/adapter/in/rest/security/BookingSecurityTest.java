@@ -103,6 +103,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for GET /api/v1/bookings/{id}")
         void should_Return401_When_NoTokenProvided() throws Exception {
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isUnauthorized());
         }
@@ -111,6 +112,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for POST /api/v1/bookings")
         void should_Return401_When_NoTokenOnCreate() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL)
+                            .with(csrf())
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"customerId\":\"test\"}"))
@@ -122,6 +124,7 @@ class BookingSecurityTest {
         void should_Return401_When_NoTokenOnConfirm() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
                             .with(csrf())
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"voyageId\":\"" + VOYAGE_ID + "\"}"))
                     .andExpect(status().isUnauthorized());
@@ -131,6 +134,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for DELETE /api/v1/bookings/{id}")
         void should_Return401_When_NoTokenOnCancel() throws Exception {
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"test cancellation\"}"))
@@ -151,6 +155,7 @@ class BookingSecurityTest {
             given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.bookingId").value(BOOKING_ID));
@@ -166,6 +171,7 @@ class BookingSecurityTest {
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -181,6 +187,7 @@ class BookingSecurityTest {
 
             mockMvc.perform(get(BOOKINGS_URL)
                             .param("customerId", CUSTOMER_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(1));
@@ -203,6 +210,7 @@ class BookingSecurityTest {
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -216,6 +224,7 @@ class BookingSecurityTest {
             given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.bookingId").value(BOOKING_ID));
@@ -235,6 +244,7 @@ class BookingSecurityTest {
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());
@@ -247,6 +257,7 @@ class BookingSecurityTest {
             given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.bookingId").value(BOOKING_ID));
@@ -261,6 +272,7 @@ class BookingSecurityTest {
 
             mockMvc.perform(get(BOOKINGS_URL)
                             .param("customerId", CUSTOMER_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(1));
@@ -272,6 +284,7 @@ class BookingSecurityTest {
         void should_Return403_When_CustomerViewsOtherCustomerBookings() throws Exception {
             mockMvc.perform(get(BOOKINGS_URL)
                             .param("customerId", OTHER_CUSTOMER_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden());
         }
@@ -285,6 +298,7 @@ class BookingSecurityTest {
                     .willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"Changed plans\"}"))
                     .andExpect(status().isOk());
@@ -297,6 +311,7 @@ class BookingSecurityTest {
             given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden());
         }
@@ -308,6 +323,7 @@ class BookingSecurityTest {
             given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"Changed plans\"}"))
                     .andExpect(status().isForbidden());
@@ -330,6 +346,7 @@ class BookingSecurityTest {
             );
 
             mockMvc.perform(post(BOOKINGS_URL)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());
@@ -347,6 +364,7 @@ class BookingSecurityTest {
         @DisplayName("should return 403 when finance role tries to create a booking")
         void should_Return403_When_FinanceTriesToCreate() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"customerId\":\"test\",\"origin\":\"CNSHA\",\"destination\":\"USLAX\"," +
                                     "\"commodityCode\":\"8471\",\"description\":\"Electronics\"," +
@@ -362,6 +380,7 @@ class BookingSecurityTest {
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());
@@ -372,6 +391,7 @@ class BookingSecurityTest {
         @DisplayName("should return 403 when finance role tries to retrieve a booking")
         void should_Return403_When_FinanceTriesToRetrieve() throws Exception {
             mockMvc.perform(get(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden());
         }
