@@ -56,9 +56,9 @@ import java.util.Optional;
  */
 @Service
 @Profiled(value = "bookingConfirmationSaga", slowThresholdMs = 5000)
-public class BookingConfirmationSaga {
+public class BookingConfirmationSagaHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(BookingConfirmationSaga.class);
+    private static final Logger log = LoggerFactory.getLogger(BookingConfirmationSagaHandler.class);
 
     private final BookingService bookingService;
     private final VesselCapacityPort vesselCapacityPort;
@@ -67,7 +67,7 @@ public class BookingConfirmationSaga {
     private final SagaExecutionRepository sagaRepository;
 
     /**
-     * Creates a new {@code BookingConfirmationSaga} with all required dependencies.
+     * Creates a new {@code BookingConfirmationSagaHandler} with all required dependencies.
      *
      * @param bookingService the booking application service for confirm/cancel operations
      * @param vesselCapacityPort outbound port for vessel capacity reservation/release
@@ -75,7 +75,7 @@ public class BookingConfirmationSaga {
      * @param notificationPort outbound port for notification operations
      * @param sagaRepository the repository for persisting saga execution state
      */
-    public BookingConfirmationSaga(
+    public BookingConfirmationSagaHandler(
             BookingService bookingService,
             VesselCapacityPort vesselCapacityPort,
             BillingPort billingPort,

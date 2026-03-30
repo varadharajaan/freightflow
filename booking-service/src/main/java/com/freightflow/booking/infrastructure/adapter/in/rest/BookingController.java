@@ -1,7 +1,7 @@
 package com.freightflow.booking.infrastructure.adapter.in.rest;
 
 import com.freightflow.booking.application.BookingService;
-import com.freightflow.booking.application.saga.BookingConfirmationSaga;
+import com.freightflow.booking.application.saga.BookingConfirmationSagaHandler;
 import com.freightflow.booking.application.saga.SagaExecution;
 import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.infrastructure.adapter.in.rest.dto.BookingResponse;
@@ -58,7 +58,7 @@ public class BookingController {
     private static final Logger log = LoggerFactory.getLogger(BookingController.class);
 
     private final BookingService bookingService;
-    private final BookingConfirmationSaga bookingConfirmationSaga;
+    private final BookingConfirmationSagaHandler bookingConfirmationSaga;
 
     /**
      * Creates a new {@code BookingController} with the required application services.
@@ -67,10 +67,10 @@ public class BookingController {
      * @param bookingConfirmationSaga  the saga orchestrator for distributed booking confirmation (must not be null)
      */
     public BookingController(BookingService bookingService,
-                             BookingConfirmationSaga bookingConfirmationSaga) {
+                             BookingConfirmationSagaHandler bookingConfirmationSaga) {
         this.bookingService = Objects.requireNonNull(bookingService, "BookingService must not be null");
         this.bookingConfirmationSaga = Objects.requireNonNull(bookingConfirmationSaga,
-                "BookingConfirmationSaga must not be null");
+                "BookingConfirmationSagaHandler must not be null");
     }
 
     /**

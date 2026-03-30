@@ -2,7 +2,7 @@ package com.freightflow.booking.infrastructure.adapter.in.rest.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.freightflow.booking.application.BookingService;
-import com.freightflow.booking.application.saga.BookingConfirmationSaga;
+import com.freightflow.booking.application.saga.BookingConfirmationSagaHandler;
 import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.domain.model.BookingStatus;
 import com.freightflow.booking.domain.model.Cargo;
@@ -33,6 +33,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -78,7 +79,7 @@ class BookingSecurityTest {
     private static final String BOOKING_ID = "b1a2c3d4-e5f6-7890-abcd-ef1234567890";
     private static final String CUSTOMER_ID = "c1a2b3c4-d5e6-f789-0abc-def123456789";
     private static final String OTHER_CUSTOMER_ID = "d1e2f3a4-b5c6-7890-1234-abcdef123456";
-    private static final String VOYAGE_ID = "v1o2y3a4-g5e6-7890-abcd-123456789abc";
+    private static final String VOYAGE_ID = "a1b2c3d4-e5f6-7890-abcd-123456789abc";
 
     @Autowired
     private MockMvc mockMvc;
@@ -90,7 +91,7 @@ class BookingSecurityTest {
     private BookingService bookingService;
 
     @MockBean
-    private BookingConfirmationSaga bookingConfirmationSaga;
+    private BookingConfirmationSagaHandler bookingConfirmationSagaHandler;
 
     // ==================== Authentication Tests ====================
 
@@ -110,6 +111,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for POST /api/v1/bookings")
         void should_Return401_When_NoTokenOnCreate() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"customerId\":\"test\"}"))
                     .andExpect(status().isUnauthorized());
@@ -119,6 +121,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for POST /api/v1/bookings/{id}/confirm")
         void should_Return401_When_NoTokenOnConfirm() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"voyageId\":\"" + VOYAGE_ID + "\"}"))
                     .andExpect(status().isUnauthorized());
@@ -128,6 +131,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for DELETE /api/v1/bookings/{id}")
         void should_Return401_When_NoTokenOnCancel() throws Exception {
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"test cancellation\"}"))
                     .andExpect(status().isUnauthorized());

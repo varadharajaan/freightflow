@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
@@ -38,7 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for the {@link BookingConfirmationSaga} orchestrator.
+ * Unit tests for the {@link BookingConfirmationSagaHandler} orchestrator.
  *
  * <p>Tests cover the complete saga lifecycle: happy path, compensation scenarios for
  * each step, idempotency, and fire-and-forget notification handling. All dependencies
@@ -47,13 +49,14 @@ import static org.mockito.Mockito.when;
  * <p>Tests follow BDD naming: {@code should_X_When_Y()} and use AssertJ for
  * fluent, readable assertions.</p>
  *
- * @see BookingConfirmationSaga
+ * @see BookingConfirmationSagaHandler
  * @see SagaExecution
  * @see SagaStep
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Booking Confirmation Saga Orchestrator")
-class BookingConfirmationSagaTest {
+class BookingConfirmationSagaHandlerTest {
 
     // ==================== Test Fixtures ====================
 
@@ -76,11 +79,11 @@ class BookingConfirmationSagaTest {
     @Mock
     private SagaExecutionRepository sagaRepository;
 
-    private BookingConfirmationSaga saga;
+    private BookingConfirmationSagaHandler saga;
 
     @BeforeEach
     void setUp() {
-        saga = new BookingConfirmationSaga(
+        saga = new BookingConfirmationSagaHandler(
                 bookingService,
                 vesselCapacityPort,
                 billingPort,

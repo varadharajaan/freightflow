@@ -33,9 +33,9 @@ import org.springframework.stereotype.Service;
  * @see org.springframework.cache.annotation.CacheEvict
  */
 @Service
-public class SpelCacheExamples {
+public class SpelCacheExamplesService {
 
-    private static final Logger log = LoggerFactory.getLogger(SpelCacheExamples.class);
+    private static final Logger log = LoggerFactory.getLogger(SpelCacheExamplesService.class);
 
     /**
      * SpEL in @Cacheable — dynamic key from method parameter.
