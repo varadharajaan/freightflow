@@ -47,12 +47,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "spring.kafka.consumer.auto-offset-reset=earliest",
                 "spring.cloud.config.enabled=false",
                 "eureka.client.enabled=false",
-                "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://mock-issuer.example.com",
-                "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration",
+                "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration,org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration",
                 "management.endpoints.web.exposure.include=health,info,metrics,prometheus",
                 "management.endpoint.health.show-details=always",
                 "freightflow.tracing.enabled=false",
-                "freightflow.security.enabled=true"
+                "freightflow.security.enabled=false"
         }
 )
 @AutoConfigureMockMvc

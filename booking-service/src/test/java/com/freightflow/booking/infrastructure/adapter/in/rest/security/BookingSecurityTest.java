@@ -70,9 +70,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @see BookingController
  */
 @WebMvcTest(BookingController.class)
-@Import(com.freightflow.booking.infrastructure.config.security.BookingSecurityConfig.class)
+@Import({
+        com.freightflow.booking.infrastructure.config.security.BookingSecurityConfig.class,
+        BookingSecurityTest.TestSecurityConfig.class
+})
 @DisplayName("BookingController Security Tests")
 class BookingSecurityTest {
+
+    /**
+     * Test-specific security configuration that enables method security.
+     *
+     * <p>{@code @WebMvcTest} does not auto-configure method security from external modules,
+     * so we explicitly enable {@code @PreAuthorize} annotations for security tests.</p>
+     */
+    @org.springframework.context.annotation.Configuration
+    @org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity(prePostEnabled = true)
+    static class TestSecurityConfig {
+    }
 
     private static final String BOOKINGS_URL = "/api/v1/bookings";
     // Using fixed UUIDs for compile-time constant requirement in @WithMockUser annotation
