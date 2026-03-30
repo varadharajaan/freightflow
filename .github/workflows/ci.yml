@@ -4,6 +4,12 @@
 # Triggered on push to main/master/develop and pull requests to main/master.
 # Stages: toolchain check → build & test → code quality + security (parallel)
 #        → docker build & push (main/master only)
+#
+# CACHING STRATEGY:
+# - Maven dependencies: cached via actions/setup-java with hash-based key
+# - Compiled classes: cached between jobs to avoid recompilation
+# - Docker layers: GitHub Actions cache (GHA) for build-push-action
+# - Terraform providers: cached to avoid repeated downloads
 # =============================================================================
 name: CI/CD Pipeline
 
@@ -16,6 +22,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/varadharajaan/freightflow
+  # Maven build cache configuration
+  MAVEN_OPTS: -Dmaven.repo.local=.m2/repository
 
 permissions:
   contents: read
@@ -24,6 +32,46 @@ permissions:
   pull-requests: write
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Stage 0: Detect Changed Paths (for selective job execution)
+  # ---------------------------------------------------------------------------
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      java: ${{ steps.filter.outputs.java }}
+      terraform: ${{ steps.filter.outputs.terraform }}
+      kubernetes: ${{ steps.filter.outputs.kubernetes }}
+      services: ${{ steps.filter.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            java:
+              - '**/*.java'
+              - '**/pom.xml'
+              - '.mvn/**'
+              - 'mvnw*'
+            terraform:
+              - 'infrastructure/terraform/**'
+            kubernetes:
+              - 'infrastructure/kubernetes/**'
+            services:
+              - 'booking-service/**'
+              - 'tracking-service/**'
+              - 'billing-service/**'
+              - 'vessel-schedule-service/**'
+              - 'customer-service/**'
+              - 'notification-service/**'
+              - 'api-gateway/**'
+              - 'discovery-server/**'
+              - 'config-server/**'
+              - 'freightflow-commons/**'
+              - 'freightflow-parent/**'
+              - 'freightflow-bom/**'
+
   # ---------------------------------------------------------------------------
   # Stage 1: Toolchain Verification
   # ---------------------------------------------------------------------------
@@ -50,7 +98,8 @@ jobs:
   # ---------------------------------------------------------------------------
   build-and-test:
     name: Build & Test
-    needs: toolchain-check
+    needs: [toolchain-check, changes]
+    if: needs.changes.outputs.java == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -63,17 +112,54 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v4
+      
+      # --- Maven Cache: dependencies + compiled classes ---
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/com/freightflow
+          key: maven-deps-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-deps-${{ runner.os }}-
+      
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven'
+          
+      - name: Restore compiled classes cache
+        uses: actions/cache@v4
+        id: classes-cache
+        with:
+          path: |
+            **/target/classes
+            **/target/test-classes
+            **/target/generated-sources
+          key: compiled-${{ runner.os }}-${{ hashFiles('**/src/**/*.java', '**/pom.xml') }}
+          restore-keys: |
+            compiled-${{ runner.os }}-
+            
       - name: Compile All Modules
-        run: ./mvnw compile -B -ntp -T1C
+        if: steps.classes-cache.outputs.cache-hit != 'true'
+        run: ./mvnw compile test-compile -B -ntp -T1C
+        
       - name: Unit Tests
-        run: ./mvnw test -B -ntp
+        run: ./mvnw test -B -ntp -Dmaven.main.skip=true
+        
       - name: Integration Tests + Verify
-        run: ./mvnw verify -B -ntp
+        run: ./mvnw verify -B -ntp -Dmaven.main.skip=true
+        
+      # --- Cache compiled artifacts for downstream jobs ---
+      - name: Save build artifacts for downstream jobs
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            **/target/*.jar
+            **/target/classes
+          key: build-artifacts-${{ github.sha }}
+          
       - name: Upload Test Reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -92,15 +178,36 @@ jobs:
   # ---------------------------------------------------------------------------
   code-quality:
     name: Code Quality
-    needs: build-and-test
+    needs: [build-and-test, changes]
+    if: needs.changes.outputs.java == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      # --- Restore Maven cache and build artifacts ---
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/com/freightflow
+          key: maven-deps-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-deps-${{ runner.os }}-
+            
+      - name: Restore build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            **/target/*.jar
+            **/target/classes
+          key: build-artifacts-${{ github.sha }}
+          
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven'
+          
       - name: Architecture Tests
         run: ./mvnw test -B -ntp -Dtest="*ArchitectureTest" -Dsurefire.failIfNoSpecifiedTests=false
       - name: Checkstyle
@@ -117,15 +224,37 @@ jobs:
   # ---------------------------------------------------------------------------
   security-scan:
     name: Security Scan
-    needs: build-and-test
+    needs: [build-and-test, changes]
+    if: needs.changes.outputs.java == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      # --- Restore Maven cache ---
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/com/freightflow
+          key: maven-deps-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-deps-${{ runner.os }}-
+            
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven'
+          
+      # --- Cache OWASP NVD database (large, slow to download) ---
+      - name: Cache OWASP NVD Database
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: owasp-nvd-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            owasp-nvd-${{ runner.os }}-
+            
       - name: OWASP Dependency Check
         run: ./mvnw org.owasp:dependency-check-maven:check -B -ntp -DfailBuildOnCVSS=9 || true
 
@@ -134,13 +263,33 @@ jobs:
   # ---------------------------------------------------------------------------
   iac-validate:
     name: IaC Validate
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      # --- Cache Terraform providers ---
+      - name: Cache Terraform Providers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            infrastructure/terraform/**/.terraform
+          key: terraform-${{ runner.os }}-${{ hashFiles('infrastructure/terraform/**/*.tf') }}
+          restore-keys: |
+            terraform-${{ runner.os }}-
+            
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.10.5
+          
+      - name: Configure Terraform Plugin Cache
+        run: |
+          mkdir -p ~/.terraform.d/plugin-cache
+          echo 'plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"' > ~/.terraformrc
+          
       - name: Terraform Format Check
         run: terraform fmt -check -recursive infrastructure/terraform
       - name: Terraform Validate (modules + bootstrap)
