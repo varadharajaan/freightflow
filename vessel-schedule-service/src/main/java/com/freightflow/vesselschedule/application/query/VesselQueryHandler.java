@@ -71,7 +71,7 @@ public class VesselQueryHandler {
         return vesselRepository.findById(vesselId)
                 .orElseThrow(() -> {
                     log.warn("Vessel not found: vesselId={}", vesselId);
-                    return new ResourceNotFoundException("Vessel", vesselId.toString());
+                    return ResourceNotFoundException.forResource("Vessel", vesselId.toString());
                 });
     }
 
@@ -108,7 +108,7 @@ public class VesselQueryHandler {
         return voyageRepository.findById(voyageId)
                 .orElseThrow(() -> {
                     log.warn("Voyage not found: voyageId={}", voyageId);
-                    return new ResourceNotFoundException("Voyage", voyageId.toString());
+                    return ResourceNotFoundException.forResource("Voyage", voyageId.toString());
                 });
     }
 

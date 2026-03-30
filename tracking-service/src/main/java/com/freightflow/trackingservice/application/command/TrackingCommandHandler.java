@@ -203,7 +203,7 @@ public class TrackingCommandHandler {
         return containerRepository.findByContainerId(containerId)
                 .orElseThrow(() -> {
                     log.warn("Container not found: containerId={}", containerId);
-                    return new ResourceNotFoundException("Container", containerId);
+                    return ResourceNotFoundException.forResource("Container", containerId);
                 });
     }
 }

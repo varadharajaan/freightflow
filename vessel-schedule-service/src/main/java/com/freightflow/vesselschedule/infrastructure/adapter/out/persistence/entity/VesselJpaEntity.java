@@ -60,7 +60,7 @@ public class VesselJpaEntity {
     /**
      * Required by JPA. Do not use directly.
      */
-    protected VesselJpaEntity() {
+    public VesselJpaEntity() {
     }
 
     // ==================== Getters and Setters ====================

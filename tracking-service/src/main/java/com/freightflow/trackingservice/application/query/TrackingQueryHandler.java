@@ -66,7 +66,7 @@ public class TrackingQueryHandler {
         return containerRepository.findByContainerId(containerId)
                 .orElseThrow(() -> {
                     log.warn("Container not found: containerId={}", containerId);
-                    return new ResourceNotFoundException("Container", containerId);
+                    return ResourceNotFoundException.forResource("Container", containerId);
                 });
     }
 
@@ -89,7 +89,7 @@ public class TrackingQueryHandler {
         Container container = containerRepository.findByContainerId(containerId)
                 .orElseThrow(() -> {
                     log.warn("Container not found for milestones: containerId={}", containerId);
-                    return new ResourceNotFoundException("Container", containerId);
+                    return ResourceNotFoundException.forResource("Container", containerId);
                 });
 
         List<Milestone> milestones = container.getMilestones();

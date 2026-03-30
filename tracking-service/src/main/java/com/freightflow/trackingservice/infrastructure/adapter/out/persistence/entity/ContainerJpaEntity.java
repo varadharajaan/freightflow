@@ -86,7 +86,7 @@ public class ContainerJpaEntity {
     /**
      * Required by JPA. Do not use directly — use the persistence adapter.
      */
-    protected ContainerJpaEntity() {
+    public ContainerJpaEntity() {
         // JPA requires a no-arg constructor
     }
 

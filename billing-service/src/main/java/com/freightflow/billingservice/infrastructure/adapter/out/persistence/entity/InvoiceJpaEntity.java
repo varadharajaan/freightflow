@@ -105,7 +105,7 @@ public class InvoiceJpaEntity {
     /**
      * Required by JPA. Do not use directly — use the persistence adapter.
      */
-    protected InvoiceJpaEntity() {
+    public InvoiceJpaEntity() {
         // JPA requires a no-arg constructor
     }
 

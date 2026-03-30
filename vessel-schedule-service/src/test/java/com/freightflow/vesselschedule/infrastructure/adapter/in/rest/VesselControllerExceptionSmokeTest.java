@@ -37,7 +37,7 @@ class VesselControllerExceptionSmokeTest {
     void shouldReturnProblemDetailForResourceNotFoundFromCentralizedHandler() throws Exception {
         UUID voyageId = UUID.randomUUID();
         when(vesselQueryHandler.getVoyage(voyageId))
-                .thenThrow(new ResourceNotFoundException("Voyage", voyageId.toString()));
+                .thenThrow(ResourceNotFoundException.forResource("Voyage", voyageId.toString()));
 
         mockMvc.perform(get("/api/v1/voyages/{voyageId}", voyageId))
                 .andExpect(status().isNotFound())

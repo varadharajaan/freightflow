@@ -64,7 +64,7 @@ public class BillingQueryHandler {
         return invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> {
                     log.warn("Invoice not found: invoiceId={}", invoiceId);
-                    return new ResourceNotFoundException("Invoice", invoiceId.toString());
+                    return ResourceNotFoundException.forResource("Invoice", invoiceId.toString());
                 });
     }
 

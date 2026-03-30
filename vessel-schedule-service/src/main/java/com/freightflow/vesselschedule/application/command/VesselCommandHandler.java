@@ -173,7 +173,7 @@ public class VesselCommandHandler {
         return voyageRepository.findById(voyageId)
                 .orElseThrow(() -> {
                     log.warn("Voyage not found: voyageId={}", voyageId);
-                    return new ResourceNotFoundException("Voyage", voyageId.toString());
+                    return ResourceNotFoundException.forResource("Voyage", voyageId.toString());
                 });
     }
 
