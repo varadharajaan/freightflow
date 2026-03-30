@@ -7,6 +7,7 @@ for AWS infrastructure used by FreightFlow.
 
 - VPC with public/private subnets across 3 AZs
 - EKS cluster + managed node groups + IRSA OIDC
+- IAM module for IRSA roles and least-privilege policies
 - RDS PostgreSQL
 - MSK Kafka
 - ElastiCache Redis
@@ -24,6 +25,7 @@ infrastructure/terraform/
 ├── modules/
 │   ├── alb/
 │   ├── eks/
+│   ├── iam/
 │   ├── msk/
 │   ├── network/
 │   ├── rds-postgres/
@@ -50,10 +52,11 @@ infrastructure/terraform/
 1. `network`
 2. `eks`
 3. `rds-postgres`
-4. `msk`
-5. `redis`
-6. `secrets`
-7. `alb`
+4. `iam`
+5. `msk`
+6. `redis`
+7. `secrets`
+8. `alb`
 
 ## Terragrunt Usage
 
@@ -64,6 +67,12 @@ cd infrastructure/terraform/live/dev/ap-south-1
 terragrunt run-all plan
 terragrunt run-all apply
 ```
+
+## tfvars Example
+
+For standalone Terraform module runs (without Terragrunt), use:
+
+- [terraform.tfvars.example](C:/Users/vdamotharan/Desktop/freightflow/infrastructure/terraform/terraform.tfvars.example)
 
 ## Security Checks
 

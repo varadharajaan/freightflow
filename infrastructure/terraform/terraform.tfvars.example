@@ -1,0 +1,12 @@
+# Example Terraform variables for standalone module testing.
+# Terragrunt environments under infrastructure/terraform/live use env.hcl and do not require this file.
+
+aws_region = "ap-south-1"
+project    = "freightflow"
+environment = "dev"
+
+tags = {
+  Project     = "freightflow"
+  Environment = "dev"
+  ManagedBy   = "terraform"
+}

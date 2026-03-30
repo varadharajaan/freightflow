@@ -152,6 +152,18 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-verifier</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling.highcharts</groupId>
+            <artifactId>gatling-charts-highcharts</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <!-- ==================== Build ==================== -->
@@ -168,6 +180,14 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                <configuration>
+                    <baseClassForTests>com.freightflow.booking.contract.ContractBaseTest</baseClassForTests>
+                </configuration>
             </plugin>
 
         </plugins>

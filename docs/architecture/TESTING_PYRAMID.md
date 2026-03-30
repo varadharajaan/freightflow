@@ -28,6 +28,8 @@ Establish a principal-level testing baseline with clear layering and enforceable
   - `*IT.java`
 - Shared support utilities available in:
   - [ContainerizedDependencies.java](C:/Users/vdamotharan/Desktop/freightflow/freightflow-commons/commons-testing/src/main/java/com/freightflow/commons/testing/ContainerizedDependencies.java)
+- Booking integration test with PostgreSQL + Kafka containers:
+  - [BookingRepositoryIntegrationTest.java](C:/Users/vdamotharan/Desktop/freightflow/booking-service/src/test/java/com/freightflow/booking/infrastructure/adapter/out/persistence/BookingRepositoryIntegrationTest.java)
 
 ### Architecture
 
@@ -46,11 +48,17 @@ Establish a principal-level testing baseline with clear layering and enforceable
   - [should_return_health_up.groovy](C:/Users/vdamotharan/Desktop/freightflow/api-gateway/src/test/resources/contracts/actuator/should_return_health_up.groovy)
 - Base class for generated verifier tests:
   - [ContractBaseTest.java](C:/Users/vdamotharan/Desktop/freightflow/api-gateway/src/test/java/com/freightflow/gateway/contract/ContractBaseTest.java)
+- Booking service producer contract:
+  - [should_return_booking_health_up.groovy](C:/Users/vdamotharan/Desktop/freightflow/booking-service/src/test/resources/contracts/actuator/should_return_booking_health_up.groovy)
+- Booking contract base class:
+  - [ContractBaseTest.java](C:/Users/vdamotharan/Desktop/freightflow/booking-service/src/test/java/com/freightflow/booking/contract/ContractBaseTest.java)
 
 ### Performance
 
 - First Gatling simulation added:
   - [HealthCheckSimulation.scala](C:/Users/vdamotharan/Desktop/freightflow/api-gateway/src/test/gatling/com/freightflow/gateway/HealthCheckSimulation.scala)
+- Booking API read-path simulation added:
+  - [BookingApiSimulation.scala](C:/Users/vdamotharan/Desktop/freightflow/booking-service/src/test/gatling/com/freightflow/booking/BookingApiSimulation.scala)
 - Includes assertion baseline:
   - `p99 < 200ms`
   - `>99%` successful requests
@@ -76,8 +84,8 @@ Establish a principal-level testing baseline with clear layering and enforceable
 
 ## Next Rollout (Incremental)
 
-1. Add Spring Cloud Contract producer/consumer contracts per service boundary.
-2. Add dedicated Gatling simulations for gateway + booking read paths.
+1. Expand Spring Cloud Contract producer/consumer contracts per service boundary.
+2. Add additional Gatling scenarios beyond health and booking read paths.
 3. Enforce per-service minimum test packs in CI:
    - at least one unit test suite
    - at least one integration slice
