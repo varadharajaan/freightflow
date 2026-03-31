@@ -69,7 +69,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * @see BookingController
  */
-@WebMvcTest(BookingController.class)
+@WebMvcTest(controllers = BookingController.class)
 @Import({
         com.freightflow.booking.infrastructure.config.security.BookingSecurityConfig.class,
         BookingSecurityTest.TestSecurityConfig.class
