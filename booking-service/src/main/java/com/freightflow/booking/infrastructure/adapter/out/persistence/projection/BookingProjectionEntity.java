@@ -2,10 +2,10 @@ package com.freightflow.booking.infrastructure.adapter.out.persistence.projectio
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -86,7 +86,7 @@ public class BookingProjectionEntity {
     private Instant updatedAt;
 
     /** Auto-incrementing sequence for cursor-based pagination. */
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Generated(GenerationTime.INSERT)
     @Column(name = "sequence_number", nullable = false, insertable = false, updatable = false)
     private long sequenceNumber;
 

@@ -49,7 +49,7 @@ public class BookingEntityMapper {
         var entity = BookingJpaEntity.createForMapping();
         entity.setId(booking.getId().value());
         entity.setCustomerId(booking.getCustomerId().value());
-        entity.setStatus(booking.getStatus().name());
+        entity.setStatus(booking.getStatus());
 
         // Cargo fields (flattened from value objects)
         Cargo cargo = booking.getCargo();
@@ -114,7 +114,7 @@ public class BookingEntityMapper {
                 new CustomerId(entity.getCustomerId()),
                 cargo,
                 entity.getRequestedDepartureDate(),
-                BookingStatus.valueOf(entity.getStatus()),
+                entity.getStatus(),
                 voyageId,
                 entity.getCancellationReason(),
                 entity.getCreatedAt(),

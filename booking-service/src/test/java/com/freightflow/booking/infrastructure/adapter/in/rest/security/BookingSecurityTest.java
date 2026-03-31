@@ -97,6 +97,11 @@ class BookingSecurityTest {
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/actuator/**").permitAll()
                             .anyRequest().authenticated()
+                    )
+                    .exceptionHandling(ex -> ex
+                            .authenticationEntryPoint((request, response, authException) -> {
+                                response.setStatus(org.springframework.http.HttpStatus.UNAUTHORIZED.value());
+                            })
                     );
             return http.build();
         }

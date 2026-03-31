@@ -8,6 +8,7 @@ import com.freightflow.commons.observability.profiling.Profiled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +42,7 @@ import java.util.Objects;
  * @see OutboxProcessor
  */
 @Component
+@Primary
 public class OutboxEventPublisher implements BookingEventPublisher {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxEventPublisher.class);

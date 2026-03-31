@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
                 "spring.profiles.active=test",
-                "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
+                "spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
                 "spring.datasource.driver-class-name=org.h2.Driver",
                 "spring.jpa.hibernate.ddl-auto=create-drop",
                 "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
@@ -50,8 +50,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration,org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration",
                 "management.endpoints.web.exposure.include=health,info,metrics,prometheus",
                 "management.endpoint.health.show-details=always",
+                "management.endpoint.prometheus.enabled=true",
+                "management.prometheus.metrics.export.enabled=true",
                 "freightflow.tracing.enabled=false",
-                "freightflow.security.enabled=false"
+                "freightflow.security.enabled=false",
+                "spring.cache.type=simple"
         }
 )
 @AutoConfigureMockMvc
