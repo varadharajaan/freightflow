@@ -128,13 +128,15 @@ public interface SpringDataContainerRepository
      * @param voyageId  the voyage UUID
      * @param oldStatus the current status to match
      * @param newStatus the new status to set
+     * @param updatedAt the timestamp to set for updated_at
      * @return the number of rows updated
      */
-    @Modifying
-    @Query("UPDATE ContainerJpaEntity c SET c.status = :newStatus, c.updatedAt = CURRENT_TIMESTAMP "
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ContainerJpaEntity c SET c.status = :newStatus, c.updatedAt = :updatedAt "
             + "WHERE c.voyageId = :voyageId AND c.status = :oldStatus")
     int bulkUpdateStatusByVoyage(
             @Param("voyageId") UUID voyageId,
             @Param("oldStatus") String oldStatus,
-            @Param("newStatus") String newStatus);
+            @Param("newStatus") String newStatus,
+            @Param("updatedAt") Instant updatedAt);
 }
