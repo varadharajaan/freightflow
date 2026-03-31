@@ -148,7 +148,7 @@ public class NotificationCommandHandler {
 
         } catch (NotificationSendException ex) {
             log.warn("Notification delivery failed: notificationId={}, channel={}, error={}",
-                    notification.getNotificationId(), channelType, ex.getMessage());
+                    notification.getNotificationId(), channelType, ex.getMessage(), ex);
 
             notification.markRetryOrFail(ex.getMessage());
 

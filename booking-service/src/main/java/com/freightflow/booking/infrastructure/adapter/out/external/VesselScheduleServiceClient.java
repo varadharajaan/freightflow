@@ -223,7 +223,7 @@ public class VesselScheduleServiceClient implements VesselCapacityPort {
         log.warn("Fallback invoked for {}(): voyageId={}, cause={}, message={}",
                 operation, voyageId,
                 throwable.getClass().getSimpleName(),
-                throwable.getMessage());
+                throwable.getMessage(), throwable);
     }
 
     // ==================== Response Records ====================

@@ -124,7 +124,7 @@ public class BookingConfirmationSagaHandler {
             saga = executeConfirmBooking(saga, bookingId, voyageId);
         } catch (Exception e) {
             log.warn("Saga step CONFIRM_BOOKING failed: sagaId={}, bookingId={}, error={}",
-                    saga.getSagaId(), bookingId, e.getMessage());
+                    saga.getSagaId(), bookingId, e.getMessage(), e);
             return markFailed(saga, SagaStep.CONFIRM_BOOKING, e.getMessage());
         }
 
@@ -133,7 +133,7 @@ public class BookingConfirmationSagaHandler {
             saga = executeReserveCapacity(saga, voyageId, bookingId);
         } catch (Exception e) {
             log.warn("Saga step RESERVE_CAPACITY failed: sagaId={}, voyageId={}, error={}",
-                    saga.getSagaId(), voyageId, e.getMessage());
+                    saga.getSagaId(), voyageId, e.getMessage(), e);
             return failWithCompensation(saga, SagaStep.RESERVE_CAPACITY, e.getMessage(), bookingId, voyageId);
         }
 
@@ -142,7 +142,7 @@ public class BookingConfirmationSagaHandler {
             saga = executeGenerateInvoice(saga, bookingId, idempotencyKey);
         } catch (Exception e) {
             log.warn("Saga step GENERATE_INVOICE failed: sagaId={}, bookingId={}, error={}",
-                    saga.getSagaId(), bookingId, e.getMessage());
+                    saga.getSagaId(), bookingId, e.getMessage(), e);
             return failWithCompensation(saga, SagaStep.GENERATE_INVOICE, e.getMessage(), bookingId, voyageId);
         }
 
@@ -151,7 +151,7 @@ public class BookingConfirmationSagaHandler {
             saga = executeSendNotification(saga, bookingId, idempotencyKey);
         } catch (Exception e) {
             log.warn("Saga step SEND_NOTIFICATION failed (fire-and-forget, continuing): sagaId={}, bookingId={}, error={}",
-                    saga.getSagaId(), bookingId, e.getMessage());
+                    saga.getSagaId(), bookingId, e.getMessage(), e);
             // Fire-and-forget — no compensation, no failure. Saga still completes.
         }
 

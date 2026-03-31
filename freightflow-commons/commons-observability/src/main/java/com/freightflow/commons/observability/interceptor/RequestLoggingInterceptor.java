@@ -87,7 +87,7 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
         if (ex != null) {
             log.warn("← RESPONSE {} {} status={} duration={}ms exception={}",
                     request.getMethod(), request.getRequestURI(),
-                    status, durationMs, ex.getMessage());
+                    status, durationMs, ex.getMessage(), ex);
         } else if (status >= 500) {
             log.error("← RESPONSE {} {} status={} duration={}ms (server error)",
                     request.getMethod(), request.getRequestURI(), status, durationMs);

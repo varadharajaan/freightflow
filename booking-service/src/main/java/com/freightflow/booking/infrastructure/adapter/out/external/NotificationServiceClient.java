@@ -30,7 +30,7 @@ public class NotificationServiceClient implements NotificationPort {
 
     private boolean sendBookingConfirmationFallback(String bookingId, String idempotencyKey, Throwable throwable) {
         log.warn("Notification fallback: bookingId={}, idempotencyKey={}, error={}",
-                bookingId, idempotencyKey, throwable.getMessage());
+                bookingId, idempotencyKey, throwable.getMessage(), throwable);
         return false;
     }
 }

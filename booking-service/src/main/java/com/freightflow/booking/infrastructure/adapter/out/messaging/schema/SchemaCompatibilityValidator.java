@@ -114,7 +114,7 @@ public class SchemaCompatibilityValidator {
             return coreFieldsMatch;
 
         } catch (JsonProcessingException ex) {
-            log.warn("Backward compatibility check FAILED: V2 cannot read V1 data — {}", ex.getMessage());
+            log.warn("Backward compatibility check FAILED: V2 cannot read V1 data — {}", ex.getMessage(), ex);
             return false;
         }
     }
@@ -155,7 +155,7 @@ public class SchemaCompatibilityValidator {
             return coreFieldsMatch;
 
         } catch (JsonProcessingException ex) {
-            log.warn("Forward compatibility check FAILED: V1 cannot read V2 data — {}", ex.getMessage());
+            log.warn("Forward compatibility check FAILED: V1 cannot read V2 data — {}", ex.getMessage(), ex);
             return false;
         }
     }
