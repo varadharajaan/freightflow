@@ -54,7 +54,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "management.prometheus.metrics.export.enabled=true",
                 "freightflow.tracing.enabled=false",
                 "freightflow.security.enabled=false",
-                "spring.cache.type=simple"
+                "spring.cache.type=simple",
+                "spring.task.scheduling.pool.size=0"
         }
 )
 @AutoConfigureMockMvc
