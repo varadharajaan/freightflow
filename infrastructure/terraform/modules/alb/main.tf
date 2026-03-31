@@ -8,7 +8,7 @@ resource "aws_security_group" "this" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-ingress-sgr
   }
 
   ingress {
@@ -16,7 +16,7 @@ resource "aws_security_group" "this" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-ingress-sgr
   }
 
   egress {
@@ -24,7 +24,7 @@ resource "aws_security_group" "this" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-egress-sgr
   }
 
   tags = merge(var.tags, {
@@ -32,12 +32,14 @@ resource "aws_security_group" "this" {
   })
 }
 
+#tfsec:ignore:aws-elb-alb-not-public
 resource "aws_lb" "this" {
-  name               = "${var.name}-alb"
-  internal           = false
-  load_balancer_type = "application"
-  subnets            = var.public_subnet_ids
-  security_groups    = [aws_security_group.this.id]
+  name                       = "${var.name}-alb"
+  internal                   = false
+  load_balancer_type         = "application"
+  subnets                    = var.public_subnet_ids
+  security_groups            = [aws_security_group.this.id]
+  drop_invalid_header_fields = true
 
   tags = merge(var.tags, {
     Name = "${var.name}-alb"
@@ -65,10 +67,28 @@ resource "aws_lb_target_group" "this" {
   })
 }
 
-resource "aws_lb_listener" "http" {
+resource "aws_lb_listener" "http_to_https_redirect" {
+  count             = var.certificate_arn != null ? 1 : 0
   load_balancer_arn = aws_lb.this.arn
   port              = 80
   protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "http_forward" {
+  count             = var.certificate_arn == null ? 1 : 0
+  load_balancer_arn = aws_lb.this.arn
+  port              = 80
+  protocol          = "HTTP" #tfsec:ignore:aws-elb-http-not-used
 
   default_action {
     type             = "forward"

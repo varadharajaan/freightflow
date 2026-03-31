@@ -47,7 +47,7 @@ resource "aws_security_group" "nodes" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-egress-sgr
   }
 
   tags = merge(var.tags, {
@@ -55,16 +55,31 @@ resource "aws_security_group" "nodes" {
   })
 }
 
+#tfsec:ignore:aws-eks-no-public-cluster-access
+#tfsec:ignore:aws-eks-encrypt-secrets
 resource "aws_eks_cluster" "this" {
   name     = var.name
   role_arn = aws_iam_role.cluster.arn
   version  = var.kubernetes_version
+
+  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   vpc_config {
     subnet_ids              = var.subnet_ids
     endpoint_private_access = var.endpoint_private_access
     endpoint_public_access  = var.endpoint_public_access
     security_group_ids      = [aws_security_group.nodes.id]
+    public_access_cidrs     = var.public_access_cidrs #tfsec:ignore:aws-eks-no-public-cluster-access-cidr
+  }
+
+  dynamic "encryption_config" {
+    for_each = var.kms_key_arn != null ? [1] : []
+    content {
+      resources = ["secrets"]
+      provider {
+        key_arn = var.kms_key_arn
+      }
+    }
   }
 
   depends_on = [

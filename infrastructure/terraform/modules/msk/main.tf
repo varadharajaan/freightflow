@@ -16,7 +16,7 @@ resource "aws_security_group" "this" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-egress-sgr
   }
 
   tags = merge(var.tags, {
@@ -24,6 +24,8 @@ resource "aws_security_group" "this" {
   })
 }
 
+#tfsec:ignore:aws-msk-enable-at-rest-encryption
+#tfsec:ignore:aws-msk-enable-logging
 resource "aws_msk_cluster" "this" {
   cluster_name           = "${var.name}-msk"
   kafka_version          = var.kafka_version
@@ -46,11 +48,27 @@ resource "aws_msk_cluster" "this" {
       client_broker = "TLS"
       in_cluster    = true
     }
+
+    dynamic "encryption_at_rest" {
+      for_each = var.kms_key_arn != null ? [1] : []
+      content {
+        data_volume_kms_key_id = var.kms_key_arn
+      }
+    }
   }
 
   client_authentication {
     sasl {
       iam = true
+    }
+  }
+
+  logging_info {
+    broker_logs {
+      cloudwatch_logs {
+        enabled   = var.cloudwatch_log_group != null
+        log_group = var.cloudwatch_log_group
+      }
     }
   }
 

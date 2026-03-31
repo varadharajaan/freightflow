@@ -35,6 +35,12 @@ variable "single_nat_gateway" {
   default     = true
 }
 
+variable "enable_flow_logs" {
+  description = "Whether to enable VPC Flow Logs to CloudWatch."
+  type        = bool
+  default     = true
+}
+
 variable "cluster_name" {
   description = "Optional EKS cluster name used for subnet tagging."
   type        = string

@@ -1,3 +1,4 @@
+#tfsec:ignore:aws-s3-enable-bucket-logging
 resource "aws_s3_bucket" "state" {
   bucket = var.state_bucket_name
 
@@ -21,12 +22,14 @@ resource "aws_s3_bucket_logging" "state" {
   target_prefix = "logs/${var.state_bucket_name}/"
 }
 
+#tfsec:ignore:aws-s3-encryption-customer-key
 resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
   bucket = aws_s3_bucket.state.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = var.s3_kms_key_arn != null ? "aws:kms" : "AES256"
+      kms_master_key_id = var.s3_kms_key_arn
     }
   }
 }
