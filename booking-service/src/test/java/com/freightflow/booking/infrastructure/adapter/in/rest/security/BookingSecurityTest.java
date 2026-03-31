@@ -78,14 +78,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BookingSecurityTest {
 
     /**
-     * Test-specific security configuration that enables method security.
+     * Test-specific security configuration that enables method security and provides
+     * a security filter chain for the test context.
      *
-     * <p>{@code @WebMvcTest} does not auto-configure method security from external modules,
-     * so we explicitly enable {@code @PreAuthorize} annotations for security tests.</p>
+     * <p>{@code @WebMvcTest} does not auto-configure security from external modules,
+     * so we explicitly enable {@code @PreAuthorize} annotations and provide a basic
+     * security filter chain for the controller slice tests.</p>
      */
     @org.springframework.context.annotation.Configuration
     @org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity(prePostEnabled = true)
     static class TestSecurityConfig {
+
+        @org.springframework.context.annotation.Bean
+        public org.springframework.security.web.SecurityFilterChain securityFilterChain(
+                org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
+            http
+                    .csrf(csrf -> csrf.disable())
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/actuator/**").permitAll()
+                            .anyRequest().authenticated()
+                    );
+            return http.build();
+        }
     }
 
     private static final String BOOKINGS_URL = "/api/v1/bookings";
