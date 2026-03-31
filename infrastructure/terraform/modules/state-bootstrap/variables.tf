@@ -8,6 +8,18 @@ variable "lock_table_name" {
   type        = string
 }
 
+variable "logging_bucket_name" {
+  description = "S3 bucket name for storing access logs."
+  type        = string
+  default     = null
+}
+
+variable "kms_key_arn" {
+  description = "ARN of KMS key for DynamoDB encryption. If null, AWS managed key is used."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common tags applied to resources."
   type        = map(string)

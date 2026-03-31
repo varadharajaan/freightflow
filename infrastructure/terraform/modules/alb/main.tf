@@ -4,6 +4,7 @@ resource "aws_security_group" "this" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description = "HTTP traffic from internet"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -11,6 +12,7 @@ resource "aws_security_group" "this" {
   }
 
   ingress {
+    description = "HTTPS traffic from internet"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -18,6 +20,7 @@ resource "aws_security_group" "this" {
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

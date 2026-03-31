@@ -13,6 +13,14 @@ resource "aws_s3_bucket_versioning" "state" {
   }
 }
 
+resource "aws_s3_bucket_logging" "state" {
+  count  = var.logging_bucket_name != null ? 1 : 0
+  bucket = aws_s3_bucket.state.id
+
+  target_bucket = var.logging_bucket_name
+  target_prefix = "logs/${var.state_bucket_name}/"
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
   bucket = aws_s3_bucket.state.id
 
@@ -47,7 +55,8 @@ resource "aws_dynamodb_table" "lock" {
   }
 
   server_side_encryption {
-    enabled = true
+    enabled     = true
+    kms_key_arn = var.kms_key_arn
   }
 
   tags = merge(var.tags, {

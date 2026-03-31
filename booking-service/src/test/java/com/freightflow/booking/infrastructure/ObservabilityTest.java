@@ -43,6 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "spring.jpa.hibernate.ddl-auto=create-drop",
                 "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
                 "spring.flyway.enabled=false",
+                "spring.sql.init.mode=always",
+                "spring.sql.init.schema-locations=classpath:schema-h2.sql",
                 "spring.kafka.bootstrap-servers=localhost:9092",
                 "spring.kafka.consumer.auto-offset-reset=earliest",
                 "spring.cloud.config.enabled=false",
@@ -54,8 +56,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "management.prometheus.metrics.export.enabled=true",
                 "freightflow.tracing.enabled=false",
                 "freightflow.security.enabled=false",
-                "spring.cache.type=simple",
-                "spring.task.scheduling.pool.size=0"
+                "spring.cache.type=simple"
         }
 )
 @AutoConfigureMockMvc
