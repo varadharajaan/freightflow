@@ -69,7 +69,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * @see BookingController
  */
-@WebMvcTest(controllers = BookingController.class)
+@WebMvcTest(
+        controllers = BookingController.class,
+        excludeAutoConfiguration = {
+                org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration.class
+        }
+)
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 @Import({
         com.freightflow.booking.infrastructure.config.security.BookingSecurityConfig.class,
         BookingSecurityTest.TestSecurityConfig.class
