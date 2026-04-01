@@ -306,7 +306,85 @@ jobs:
           working_directory: infrastructure/terraform
 
   # ---------------------------------------------------------------------------
-  # Stage 4: Docker Build & Push (main/master only, per-service matrix)
+  # Stage 4a: Docker Build Verify (PRs and feature branches — build only, no push)
+  # Validates every Dockerfile compiles and packages correctly.
+  # Tests are already verified by build-and-test; this stage confirms the
+  # Docker packaging pipeline is healthy before any merge.
+  # ---------------------------------------------------------------------------
+  docker-build-verify:
+    name: Docker Build Verify — ${{ matrix.service }}
+    needs: [build-and-test, changes]
+    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && (needs.changes.outputs.services == 'true' || github.event_name == 'push')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - booking-service
+          - tracking-service
+          - billing-service
+          - vessel-schedule-service
+          - customer-service
+          - notification-service
+          - api-gateway
+          - discovery-server
+          - config-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build JAR (skip tests — already passed in build-and-test)
+        run: ./mvnw package -B -ntp -pl ${{ matrix.service }} -am -DskipTests
+      - name: Build Docker Image (no push — stage verification only)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
+          push: false
+          tags: freightflow/${{ matrix.service }}:verify-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke-test image starts (booking-service only)
+        if: matrix.service == 'booking-service'
+        run: |
+          # Run container in detached mode and wait for Spring Boot's "Started" log
+          CONTAINER_ID=$(docker run -d \
+            -e SPRING_PROFILES_ACTIVE=test \
+            -e SPRING_CONFIG_IMPORT="optional:configserver:" \
+            -e JAVA_OPTS="-XX:MaxRAMPercentage=50.0" \
+            freightflow/booking-service:verify-${{ github.sha }})
+          echo "Container started: $CONTAINER_ID"
+          # Wait up to 60 seconds for Spring Boot to report successful startup
+          TIMEOUT=60
+          ELAPSED=0
+          until docker logs "$CONTAINER_ID" 2>&1 | grep -q "Started\|Started.*Application\|JVM running for"; do
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
+            if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+              echo "ERROR: Container did not start within ${TIMEOUT}s"
+              docker logs "$CONTAINER_ID"
+              docker rm -f "$CONTAINER_ID"
+              exit 1
+            fi
+            # Fail fast if the container exited unexpectedly
+            STATUS=$(docker inspect --format='{{.State.Status}}' "$CONTAINER_ID")
+            if [ "$STATUS" = "exited" ]; then
+              echo "ERROR: Container exited unexpectedly"
+              docker logs "$CONTAINER_ID"
+              docker rm -f "$CONTAINER_ID"
+              exit 1
+            fi
+          done
+          echo "SUCCESS: booking-service container started successfully"
+          docker rm -f "$CONTAINER_ID"
+
+  # ---------------------------------------------------------------------------
+  # Stage 4b: Docker Build & Push (main/master only, per-service matrix)
   # ---------------------------------------------------------------------------
   docker-build:
     name: Docker Build & Push — ${{ matrix.service }}
