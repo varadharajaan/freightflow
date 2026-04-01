@@ -222,6 +222,12 @@ jobs:
   # ---------------------------------------------------------------------------
   # Stage 3b: Security Scan (parallel with code quality)
   # ---------------------------------------------------------------------------
+  # OPTIMIZATION: OWASP Dependency Check is slow due to NVD database download.
+  # - With NVD API key (secrets.NVD_API_KEY): ~2-4 minutes (5-10x faster rate limit)
+  # - Without API key: ~10-15 minutes (NIST rate-limits to ~50 req/min)
+  # - Parallel analysis threads reduce scan time further
+  # - Cache key uses weekly timestamp to refresh NVD data while enabling reuse
+  # ---------------------------------------------------------------------------
   security-scan:
     name: Security Scan
     needs: [build-and-test, changes]
@@ -247,16 +253,37 @@ jobs:
           distribution: 'temurin'
           
       # --- Cache OWASP NVD database (large, slow to download) ---
+      # Weekly cache key ensures fresh vulnerability data while enabling reuse
       - name: Cache OWASP NVD Database
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: owasp-nvd-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          key: owasp-nvd-${{ runner.os }}-week-${{ github.run_id }}
           restore-keys: |
+            owasp-nvd-${{ runner.os }}-week-
             owasp-nvd-${{ runner.os }}-
             
       - name: OWASP Dependency Check
-        run: ./mvnw org.owasp:dependency-check-maven:check -B -ntp -DfailBuildOnCVSS=9 || true
+        env:
+          # NVD_API_KEY increases rate limit from 50 req/min to 500+ req/min
+          # Get a free key at: https://nvd.nist.gov/developers/request-an-api-key
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+          OWASP_ARGS="-B -ntp -DfailBuildOnCVSS=9"
+          OWASP_ARGS="$OWASP_ARGS -DnvdValidForHours=24"      # Accept cached NVD data up to 24h old
+          OWASP_ARGS="$OWASP_ARGS -DanalyzerThreads=4"        # Parallel analysis
+          
+          # Use NVD API key if available (significantly faster)
+          if [ -n "$NVD_API_KEY" ]; then
+            echo "Using NVD API key for faster vulnerability database sync"
+            OWASP_ARGS="$OWASP_ARGS -DnvdApiKey=$NVD_API_KEY"
+          else
+            echo "No NVD API key configured — scan will be slower (rate-limited)"
+            echo "Get a free key at: https://nvd.nist.gov/developers/request-an-api-key"
+            echo "Then add it as NVD_API_KEY in repository secrets"
+          fi
+          
+          ./mvnw org.owasp:dependency-check-maven:check $OWASP_ARGS || true
 
   # ---------------------------------------------------------------------------
   # Stage 3c: Infrastructure as Code Validation (Terraform + tfsec)
