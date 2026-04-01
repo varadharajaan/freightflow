@@ -381,9 +381,9 @@ jobs:
         if: matrix.service == 'booking-service'
         run: |
           # Run container in detached mode and wait for Spring Boot's "Started" log
+          # Uses docker-smoke profile: in-memory H2, no Kafka/Eureka/Keycloak
           CONTAINER_ID=$(docker run -d \
-            -e SPRING_PROFILES_ACTIVE=test \
-            -e SPRING_CONFIG_IMPORT="optional:configserver:" \
+            -e SPRING_PROFILES_ACTIVE=docker-smoke \
             -e JAVA_OPTS="-XX:MaxRAMPercentage=50.0" \
             freightflow/booking-service:verify-${{ github.sha }})
           echo "Container started: $CONTAINER_ID"
