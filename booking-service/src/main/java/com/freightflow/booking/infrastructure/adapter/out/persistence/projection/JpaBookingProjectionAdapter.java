@@ -4,8 +4,10 @@ import com.freightflow.booking.application.query.BookingProjectionRepository;
 import com.freightflow.booking.application.query.BookingView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -24,6 +26,7 @@ import java.util.UUID;
  * @see SpringDataProjectionRepository
  */
 @Component
+@ConditionalOnBean(DataSource.class)
 public class JpaBookingProjectionAdapter implements BookingProjectionRepository {
 
     private static final Logger log = LoggerFactory.getLogger(JpaBookingProjectionAdapter.class);

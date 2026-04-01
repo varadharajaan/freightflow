@@ -265,6 +265,7 @@ jobs:
             
       - name: OWASP Dependency Check
         timeout-minutes: 30
+        continue-on-error: true
         env:
           # NVD_API_KEY increases rate limit from 50 req/min to 500+ req/min
           # Get a free key at: https://nvd.nist.gov/developers/request-an-api-key

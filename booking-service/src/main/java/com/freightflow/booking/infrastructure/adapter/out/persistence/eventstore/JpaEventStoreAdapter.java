@@ -11,9 +11,11 @@ import com.freightflow.commons.domain.BookingId;
 import com.freightflow.commons.exception.ConflictException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,7 @@ import java.util.Objects;
  * @see SpringDataEventStoreRepository
  */
 @Component
+@ConditionalOnBean(DataSource.class)
 public class JpaEventStoreAdapter implements EventStore, BookingQueryHandler.BookingEventStoreQueryPort {
 
     private static final Logger log = LoggerFactory.getLogger(JpaEventStoreAdapter.class);

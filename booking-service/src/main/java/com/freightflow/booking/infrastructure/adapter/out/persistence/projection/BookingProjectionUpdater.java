@@ -6,10 +6,12 @@ import com.freightflow.booking.domain.event.BookingCreated;
 import com.freightflow.booking.domain.event.BookingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -40,6 +42,7 @@ import java.util.Optional;
  * @see SpringDataProjectionRepository
  */
 @Component
+@ConditionalOnBean(DataSource.class)
 public class BookingProjectionUpdater {
 
     private static final Logger log = LoggerFactory.getLogger(BookingProjectionUpdater.class);

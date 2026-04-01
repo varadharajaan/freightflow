@@ -75,6 +75,9 @@ freightflow:
     enabled: false
   tracing:
     enabled: false
+  saga:
+    recovery:
+      enabled: false
 
 # =============================================================================
 # Management / Actuator — keep health endpoint for smoke test verification

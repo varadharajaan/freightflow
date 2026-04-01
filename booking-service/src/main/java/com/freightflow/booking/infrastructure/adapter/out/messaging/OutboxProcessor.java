@@ -3,12 +3,14 @@ package com.freightflow.booking.infrastructure.adapter.out.messaging;
 import com.freightflow.commons.observability.profiling.Profiled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,7 @@ import java.util.UUID;
  * @see OutboxEventPublisher
  */
 @Component
+@ConditionalOnBean(DataSource.class)
 public class OutboxProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxProcessor.class);
