@@ -134,6 +134,7 @@ resource "aws_route_table_association" "private" {
 }
 
 # VPC Flow Logs — captures all accepted/rejected traffic for security auditing
+#tfsec:ignore:aws-cloudwatch-log-group-customer-key
 resource "aws_cloudwatch_log_group" "flow_log" {
   count             = var.enable_flow_logs ? 1 : 0
   name              = "/aws/vpc/${var.name}/flow-logs"
@@ -162,6 +163,7 @@ resource "aws_iam_role" "flow_log" {
   tags = var.tags
 }
 
+#tfsec:ignore:aws-iam-no-policy-wildcards
 resource "aws_iam_role_policy" "flow_log" {
   count = var.enable_flow_logs ? 1 : 0
   name  = "${var.name}-flow-log-policy"

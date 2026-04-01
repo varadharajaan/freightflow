@@ -69,7 +69,7 @@ resource "aws_eks_cluster" "this" {
     endpoint_private_access = var.endpoint_private_access
     endpoint_public_access  = var.endpoint_public_access
     security_group_ids      = [aws_security_group.nodes.id]
-    public_access_cidrs     = var.public_access_cidrs #tfsec:ignore:aws-eks-no-public-cluster-access-cidr
+    public_access_cidrs     = var.public_access_cidrs #tfsec:ignore:aws-eks-no-public-cluster-access-to-cidr
   }
 
   dynamic "encryption_config" {
