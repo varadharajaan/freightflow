@@ -253,17 +253,18 @@ jobs:
           distribution: 'temurin'
           
       # --- Cache OWASP NVD database (large, slow to download) ---
-      # Weekly cache key ensures fresh vulnerability data while enabling reuse
+      # Daily cache key ensures fresh vulnerability data while enabling reuse within the day
       - name: Cache OWASP NVD Database
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: owasp-nvd-${{ runner.os }}-week-${{ github.run_id }}
+          key: owasp-nvd-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-day
           restore-keys: |
-            owasp-nvd-${{ runner.os }}-week-
+            owasp-nvd-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-
             owasp-nvd-${{ runner.os }}-
             
       - name: OWASP Dependency Check
+        timeout-minutes: 30
         env:
           # NVD_API_KEY increases rate limit from 50 req/min to 500+ req/min
           # Get a free key at: https://nvd.nist.gov/developers/request-an-api-key
@@ -277,6 +278,7 @@ jobs:
           if [ -n "$NVD_API_KEY" ]; then
             echo "Using NVD API key for faster vulnerability database sync"
             OWASP_ARGS="$OWASP_ARGS -DnvdApiKey=$NVD_API_KEY"
+            OWASP_ARGS="$OWASP_ARGS -DnvdApiDelay=100"        # 100ms delay between API calls
           else
             echo "No NVD API key configured — scan will be slower (rate-limited)"
             echo "Get a free key at: https://nvd.nist.gov/developers/request-an-api-key"
