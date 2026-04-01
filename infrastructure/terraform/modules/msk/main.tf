@@ -49,12 +49,7 @@ resource "aws_msk_cluster" "this" {
       in_cluster    = true
     }
 
-    dynamic "encryption_at_rest" {
-      for_each = var.kms_key_arn != null ? [1] : []
-      content {
-        data_volume_kms_key_id = var.kms_key_arn
-      }
-    }
+    encryption_at_rest_kms_key_arn = var.kms_key_arn
   }
 
   client_authentication {

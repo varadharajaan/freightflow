@@ -44,7 +44,7 @@ variable "ebs_volume_size" {
 }
 
 variable "kms_key_arn" {
-  description = "ARN of KMS key for MSK at-rest encryption. If null, encryption_at_rest block is omitted."
+  description = "ARN of KMS key for MSK at-rest encryption (encryption_at_rest_kms_key_arn). If null, AWS-managed key is used."
   type        = string
   default     = null
 }
