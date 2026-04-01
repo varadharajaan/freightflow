@@ -13,6 +13,7 @@ import com.freightflow.commons.domain.CustomerId;
 import com.freightflow.commons.domain.PortCode;
 import com.freightflow.commons.domain.VoyageId;
 import com.freightflow.commons.domain.Weight;
+import com.freightflow.commons.exception.ConflictException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -179,9 +180,10 @@ class BookingConfirmationSagaHandlerTest {
         @Test
         @DisplayName("should mark failed with no compensation when booking confirmation fails")
         void should_MarkFailed_When_BookingConfirmationFails() {
-            // Given — Step 1 (confirm booking) fails
+            // Given — Step 1 (confirm booking) fails with a conflict (booking not in DRAFT)
             when(bookingService.confirmBooking(BOOKING_ID, VOYAGE_ID))
-                    .thenThrow(new RuntimeException("Booking not in DRAFT status"));
+                    .thenThrow(ConflictException.invalidStateTransition(
+                            "Booking", BOOKING_ID, "CONFIRMED", "CONFIRMED"));
 
             // When
             SagaExecution result = saga.execute(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
@@ -189,7 +191,7 @@ class BookingConfirmationSagaHandlerTest {
             // Then — saga failed, no compensation needed (first step)
             assertThat(result.getStatus()).isEqualTo(SagaStatus.FAILED);
             assertThat(result.getFailedStep()).isEqualTo(SagaStep.CONFIRM_BOOKING);
-            assertThat(result.getFailureReason()).isEqualTo("Booking not in DRAFT status");
+            assertThat(result.getFailureReason()).contains("Cannot transition Booking");
             assertThat(result.getCompletedSteps()).isEmpty();
 
             // Verify no compensation was attempted

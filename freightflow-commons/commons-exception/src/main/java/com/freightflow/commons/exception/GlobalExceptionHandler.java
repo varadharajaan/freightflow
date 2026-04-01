@@ -27,6 +27,8 @@ import java.util.List;
  *   <li>{@link BusinessRuleViolationException} → 422</li>
  *   <li>{@link ExternalServiceException} → 502/503</li>
  *   <li>{@link MethodArgumentNotValidException} → 422 (Spring Bean Validation)</li>
+ *   <li>{@link IllegalArgumentException} → 400 (invalid request parameters)</li>
+ *   <li>{@link IllegalStateException} → 422 (domain state constraint violations)</li>
  *   <li>{@link Exception} → 500 (catch-all safety net)</li>
  * </ul>
  *
@@ -139,6 +141,44 @@ public class GlobalExceptionHandler {
         problem.setTitle("Validation Failed");
         problem.setProperty("errorCode", "VALIDATION_ERROR");
         problem.setProperty("errors", fieldErrors);
+        problem.setProperty("timestamp", Instant.now().toString());
+        return problem;
+    }
+
+    /**
+     * Handles invalid request arguments ({@code IllegalArgumentException}).
+     *
+     * <p>Thrown when a method receives an argument that violates a precondition
+     * (e.g., blank required header, out-of-range value). Maps to HTTP 400 Bad Request.</p>
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Invalid argument: {}", ex.getMessage(), ex);
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create(PROBLEM_BASE_URI + "bad-request"));
+        problem.setTitle("Bad Request");
+        problem.setProperty("errorCode", "INVALID_ARGUMENT");
+        problem.setProperty("timestamp", Instant.now().toString());
+        return problem;
+    }
+
+    /**
+     * Handles domain state constraint violations ({@code IllegalStateException}).
+     *
+     * <p>Thrown when an operation is attempted on an entity that is in the wrong state
+     * (e.g., issuing an invoice with no line items). Maps to HTTP 422 Unprocessable Entity.</p>
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleIllegalState(IllegalStateException ex) {
+        log.warn("Illegal state: {}", ex.getMessage(), ex);
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setType(URI.create(PROBLEM_BASE_URI + "illegal-state"));
+        problem.setTitle("Unprocessable Entity");
+        problem.setProperty("errorCode", "ILLEGAL_STATE");
         problem.setProperty("timestamp", Instant.now().toString());
         return problem;
     }
