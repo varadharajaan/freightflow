@@ -346,6 +346,7 @@ jobs:
           context: .
           file: ${{ matrix.service }}/Dockerfile
           push: false
+          load: true   # Load image into local docker daemon for smoke test
           tags: freightflow/${{ matrix.service }}:verify-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
