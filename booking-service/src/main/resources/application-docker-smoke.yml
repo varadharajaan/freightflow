@@ -11,7 +11,7 @@ spring:
   # Config Server — disabled for smoke test
   # ---------------------------------------------------------------------------
   config:
-    import: optional:
+    import: "optional:"
 
   # ---------------------------------------------------------------------------
   # Data Source — disabled for smoke test (no database needed)
