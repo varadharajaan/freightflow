@@ -12,10 +12,9 @@ import com.freightflow.commons.domain.VoyageId;
 import com.freightflow.commons.domain.Weight;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -35,7 +34,7 @@ import java.util.UUID;
  * @see Booking
  */
 @Component
-@ConditionalOnBean(DataSource.class)
+@Profile("!docker-smoke")
 public class BookingEntityMapper {
 
     private static final Logger log = LoggerFactory.getLogger(BookingEntityMapper.class);
