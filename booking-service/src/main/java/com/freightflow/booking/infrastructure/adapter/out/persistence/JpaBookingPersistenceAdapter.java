@@ -9,6 +9,7 @@ import com.freightflow.commons.domain.BookingId;
 import com.freightflow.commons.domain.CustomerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Optional;
  * @see BookingEntityMapper
  */
 @Component
+@Profile("!docker-smoke")
 public class JpaBookingPersistenceAdapter implements BookingRepository {
 
     private static final Logger log = LoggerFactory.getLogger(JpaBookingPersistenceAdapter.class);

@@ -34,7 +34,7 @@ import java.util.UUID;
  *
  * @see SagaStatus
  * @see SagaStep
- * @see BookingConfirmationSaga
+ * @see BookingConfirmationSagaHandler
  */
 public class SagaExecution {
 

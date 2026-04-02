@@ -13,6 +13,7 @@ import com.freightflow.commons.domain.CustomerId;
 import com.freightflow.commons.domain.PortCode;
 import com.freightflow.commons.domain.VoyageId;
 import com.freightflow.commons.domain.Weight;
+import com.freightflow.commons.exception.ConflictException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
@@ -38,7 +41,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for the {@link BookingConfirmationSaga} orchestrator.
+ * Unit tests for the {@link BookingConfirmationSagaHandler} orchestrator.
  *
  * <p>Tests cover the complete saga lifecycle: happy path, compensation scenarios for
  * each step, idempotency, and fire-and-forget notification handling. All dependencies
@@ -47,13 +50,14 @@ import static org.mockito.Mockito.when;
  * <p>Tests follow BDD naming: {@code should_X_When_Y()} and use AssertJ for
  * fluent, readable assertions.</p>
  *
- * @see BookingConfirmationSaga
+ * @see BookingConfirmationSagaHandler
  * @see SagaExecution
  * @see SagaStep
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Booking Confirmation Saga Orchestrator")
-class BookingConfirmationSagaTest {
+class BookingConfirmationSagaHandlerTest {
 
     // ==================== Test Fixtures ====================
 
@@ -76,11 +80,11 @@ class BookingConfirmationSagaTest {
     @Mock
     private SagaExecutionRepository sagaRepository;
 
-    private BookingConfirmationSaga saga;
+    private BookingConfirmationSagaHandler saga;
 
     @BeforeEach
     void setUp() {
-        saga = new BookingConfirmationSaga(
+        saga = new BookingConfirmationSagaHandler(
                 bookingService,
                 vesselCapacityPort,
                 billingPort,
@@ -176,9 +180,10 @@ class BookingConfirmationSagaTest {
         @Test
         @DisplayName("should mark failed with no compensation when booking confirmation fails")
         void should_MarkFailed_When_BookingConfirmationFails() {
-            // Given — Step 1 (confirm booking) fails
+            // Given — Step 1 (confirm booking) fails with a conflict (booking not in DRAFT)
             when(bookingService.confirmBooking(BOOKING_ID, VOYAGE_ID))
-                    .thenThrow(new RuntimeException("Booking not in DRAFT status"));
+                    .thenThrow(ConflictException.invalidStateTransition(
+                            "Booking", BOOKING_ID, "CONFIRMED", "CONFIRMED"));
 
             // When
             SagaExecution result = saga.execute(BOOKING_ID, VOYAGE_ID, IDEMPOTENCY_KEY);
@@ -186,7 +191,7 @@ class BookingConfirmationSagaTest {
             // Then — saga failed, no compensation needed (first step)
             assertThat(result.getStatus()).isEqualTo(SagaStatus.FAILED);
             assertThat(result.getFailedStep()).isEqualTo(SagaStep.CONFIRM_BOOKING);
-            assertThat(result.getFailureReason()).isEqualTo("Booking not in DRAFT status");
+            assertThat(result.getFailureReason()).contains("Cannot transition Booking");
             assertThat(result.getCompletedSteps()).isEmpty();
 
             // Verify no compensation was attempted

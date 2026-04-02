@@ -55,6 +55,18 @@ variable "endpoint_public_access" {
   default     = true
 }
 
+variable "public_access_cidrs" {
+  description = "CIDR blocks that can access the public API endpoint. Restrict for production."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "kms_key_arn" {
+  description = "ARN of KMS key for encrypting Kubernetes secrets. If null, encryption config is omitted."
+  type        = string
+  default     = null
+}
+
 variable "enable_irsa" {
   description = "Enable OIDC provider for IRSA."
   type        = bool

@@ -2,6 +2,7 @@ package com.freightflow.booking.infrastructure.adapter.in.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.freightflow.booking.application.BookingService;
+import com.freightflow.booking.application.saga.BookingConfirmationSagaHandler;
 import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.domain.model.BookingStatus;
 import com.freightflow.booking.domain.model.Cargo;
@@ -17,8 +18,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.bean.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -46,13 +48,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * The {@link BookingService} is mocked to isolate the controller from business logic.
  * Tests verify HTTP status codes, content types, and JSON response structure.</p>
  *
- * <p>Since there is no Spring Security in this service, no {@code @WithMockUser}
- * or security disabling is needed.</p>
+ * <p>Security is disabled via {@code @AutoConfigureMockMvc(addFilters = false)} to focus
+ * on REST API contract testing. Security tests are in {@link BookingSecurityTest}.</p>
  *
  * @see BookingController
  * @see BookingService
  */
 @WebMvcTest(BookingController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 @DisplayName("BookingController REST API")
 class BookingControllerTest {
@@ -65,6 +68,9 @@ class BookingControllerTest {
 
     @MockBean
     private BookingService bookingService;
+
+    @MockBean
+    private BookingConfirmationSagaHandler bookingConfirmationSaga;
 
     // ==================== Test Fixtures ====================
 
@@ -285,7 +291,9 @@ class BookingControllerTest {
         @Test
         @DisplayName("should return 200 OK with cancelled booking when valid cancellation")
         void should_Return200_When_ValidCancellation() throws Exception {
-            // Given
+            // Given - mock both getBooking (for security check) and cancelBooking
+            when(bookingService.getBooking(eq(BOOKING_ID)))
+                    .thenReturn(cancelledBooking());
             when(bookingService.cancelBooking(eq(BOOKING_ID), eq("Customer request")))
                     .thenReturn(cancelledBooking());
 
@@ -328,7 +336,7 @@ class BookingControllerTest {
         void should_Return404_When_CancellingNonExistentBooking() throws Exception {
             // Given
             String nonExistentId = UUID.randomUUID().toString();
-            when(bookingService.cancelBooking(eq(nonExistentId), any()))
+            when(bookingService.getBooking(eq(nonExistentId)))
                     .thenThrow(ResourceNotFoundException.forBooking(nonExistentId));
 
             String requestBody = """

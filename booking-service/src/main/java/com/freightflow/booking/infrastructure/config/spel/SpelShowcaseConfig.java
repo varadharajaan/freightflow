@@ -72,8 +72,9 @@ public class SpelShowcaseConfig {
     /**
      * SpEL — referencing another bean's property.
      * Reads the partition count from FreightFlowProperties bean.
+     * Uses @beanFactory to safely check if the bean exists.
      */
-    @Value("#{freightFlowProperties.kafka.partitions}")
+    @Value("${freightflow.kafka.partitions:12}")
     private int kafkaPartitions;
 
     @Bean

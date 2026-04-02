@@ -22,13 +22,15 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.datasource.url=jdbc:h2:mem:testdb",
                 "spring.datasource.driver-class-name=org.h2.Driver",
                 "spring.jpa.hibernate.ddl-auto=create-drop",
-                "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+                "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
                 "spring.flyway.enabled=false",
                 "spring.kafka.bootstrap-servers=localhost:9092",
                 "spring.kafka.consumer.auto-offset-reset=earliest",
                 "spring.kafka.listener.auto-startup=false",
                 "eureka.client.enabled=false",
-                "spring.cloud.config.enabled=false"
+                "spring.cloud.config.enabled=false",
+                "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration",
+                "freightflow.security.enabled=false"
         }
 )
 @ActiveProfiles("test")

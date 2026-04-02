@@ -1,1 +1,2 @@
 com.freightflow.commons.observability.tracing.FreightFlowTracingAutoConfiguration
+com.freightflow.commons.observability.profiling.MetricsConfig

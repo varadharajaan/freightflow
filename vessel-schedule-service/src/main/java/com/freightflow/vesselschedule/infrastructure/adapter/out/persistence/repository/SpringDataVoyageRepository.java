@@ -99,9 +99,10 @@ public interface SpringDataVoyageRepository
      * Bulk-cancels all scheduled voyages for a vessel (e.g., vessel going to maintenance).
      *
      * @param vesselId the vessel UUID
+     * @param updatedAt the timestamp to set for updated_at
      * @return the number of voyages cancelled
      */
-    @Modifying
-    @Query("UPDATE VoyageJpaEntity v SET v.status = 'CANCELLED', v.updatedAt = CURRENT_TIMESTAMP WHERE v.vesselId = :vesselId AND v.status = 'SCHEDULED'")
-    int bulkCancelScheduledVoyages(@Param("vesselId") UUID vesselId);
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE VoyageJpaEntity v SET v.status = 'CANCELLED', v.updatedAt = :updatedAt WHERE v.vesselId = :vesselId AND v.status = 'SCHEDULED'")
+    int bulkCancelScheduledVoyages(@Param("vesselId") UUID vesselId, @Param("updatedAt") java.time.Instant updatedAt);
 }

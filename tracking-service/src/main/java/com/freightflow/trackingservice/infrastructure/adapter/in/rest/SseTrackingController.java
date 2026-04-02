@@ -101,7 +101,7 @@ public class SseTrackingController {
         });
 
         emitter.onError(ex -> {
-            log.warn("SSE connection error for container: {}, error: {}", containerId, ex.getMessage());
+            log.warn("SSE connection error for container: {}, error: {}", containerId, ex.getMessage(), ex);
             removeEmitter(containerId, emitter);
         });
 

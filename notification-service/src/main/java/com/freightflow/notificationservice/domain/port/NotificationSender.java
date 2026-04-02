@@ -2,6 +2,7 @@ package com.freightflow.notificationservice.domain.port;
 
 import com.freightflow.notificationservice.domain.model.Notification;
 import com.freightflow.notificationservice.domain.model.NotificationChannel;
+import com.freightflow.notificationservice.domain.model.NotificationSendException;
 
 /**
  * Strategy interface for sending notifications through different channels.
@@ -44,32 +45,4 @@ public interface NotificationSender {
      * @return true if this sender can handle the channel
      */
     boolean supports(NotificationChannel channel);
-
-    /**
-     * Exception thrown when notification delivery fails.
-     *
-     * <p>Wraps the underlying transport exception (SMTP error, HTTP error, etc.)
-     * with contextual information about the notification.</p>
-     */
-    class NotificationSendException extends RuntimeException {
-
-        /**
-         * Creates a send exception with a message and root cause.
-         *
-         * @param message the contextual error message
-         * @param cause   the original transport exception
-         */
-        public NotificationSendException(String message, Throwable cause) {
-            super(message, cause);
-        }
-
-        /**
-         * Creates a send exception with a message only.
-         *
-         * @param message the error message
-         */
-        public NotificationSendException(String message) {
-            super(message);
-        }
-    }
 }

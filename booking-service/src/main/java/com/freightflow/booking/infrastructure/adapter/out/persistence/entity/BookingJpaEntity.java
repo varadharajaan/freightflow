@@ -83,7 +83,7 @@ public class BookingJpaEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private String status;
+    private com.freightflow.booking.domain.model.BookingStatus status;
 
     // ==================== Cargo Details ====================
 
@@ -170,8 +170,8 @@ public class BookingJpaEntity {
     public UUID getCustomerId() { return customerId; }
     public void setCustomerId(UUID customerId) { this.customerId = customerId; }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public com.freightflow.booking.domain.model.BookingStatus getStatus() { return status; }
+    public void setStatus(com.freightflow.booking.domain.model.BookingStatus status) { this.status = status; }
 
     public String getCommodityCode() { return commodityCode; }
     public void setCommodityCode(String commodityCode) { this.commodityCode = commodityCode; }

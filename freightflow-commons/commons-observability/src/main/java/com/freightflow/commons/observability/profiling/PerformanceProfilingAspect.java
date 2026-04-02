@@ -108,7 +108,7 @@ public class PerformanceProfilingAspect {
             outcome = "error";
 
             log.error("ERROR {}.{}() failed after {}ms: {}",
-                    className, methodName, durationMs, ex.getMessage());
+                    className, methodName, durationMs, ex.getMessage(), ex);
 
             throw ex;
 

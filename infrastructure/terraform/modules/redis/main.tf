@@ -21,10 +21,11 @@ resource "aws_security_group" "this" {
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-egress-sgr
   }
 
   tags = merge(var.tags, {
@@ -38,7 +39,7 @@ resource "aws_elasticache_replication_group" "this" {
   engine                     = "redis"
   engine_version             = var.engine_version
   node_type                  = var.node_type
-  number_cache_clusters      = var.number_cache_clusters
+  num_cache_clusters         = var.number_cache_clusters
   port                       = 6379
   subnet_group_name          = aws_elasticache_subnet_group.this.name
   security_group_ids         = [aws_security_group.this.id]

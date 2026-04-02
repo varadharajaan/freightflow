@@ -40,13 +40,13 @@ public class BillingServiceClient implements BillingPort {
 
     private boolean generateInvoiceFallback(String bookingId, String idempotencyKey, Throwable throwable) {
         log.warn("Billing generateInvoice fallback: bookingId={}, idempotencyKey={}, error={}",
-                bookingId, idempotencyKey, throwable.getMessage());
+                bookingId, idempotencyKey, throwable.getMessage(), throwable);
         return false;
     }
 
     private boolean cancelInvoiceFallback(String bookingId, String idempotencyKey, Throwable throwable) {
         log.warn("Billing cancelInvoice fallback: bookingId={}, idempotencyKey={}, error={}",
-                bookingId, idempotencyKey, throwable.getMessage());
+                bookingId, idempotencyKey, throwable.getMessage(), throwable);
         return false;
     }
 }

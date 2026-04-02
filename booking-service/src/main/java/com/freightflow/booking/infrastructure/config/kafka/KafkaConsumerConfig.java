@@ -134,7 +134,7 @@ public class KafkaConsumerConfig {
         DeadLetterPublishingRecoverer dlqRecoverer = new DeadLetterPublishingRecoverer(kafkaTemplate,
                 (record, exception) -> {
                     log.error("Message exhausted retries — routing to DLQ: topic={}, partition={}, offset={}, error={}",
-                            record.topic(), record.partition(), record.offset(), exception.getMessage());
+                            record.topic(), record.partition(), record.offset(), exception.getMessage(), exception);
                     return new org.apache.kafka.common.TopicPartition(
                             KafkaTopicConfig.BOOKING_DLQ_TOPIC, record.partition());
                 });

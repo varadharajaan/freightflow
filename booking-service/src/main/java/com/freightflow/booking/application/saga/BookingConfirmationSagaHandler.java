@@ -56,9 +56,9 @@ import java.util.Optional;
  */
 @Service
 @Profiled(value = "bookingConfirmationSaga", slowThresholdMs = 5000)
-public class BookingConfirmationSaga {
+public class BookingConfirmationSagaHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(BookingConfirmationSaga.class);
+    private static final Logger log = LoggerFactory.getLogger(BookingConfirmationSagaHandler.class);
 
     private final BookingService bookingService;
     private final VesselCapacityPort vesselCapacityPort;
@@ -67,7 +67,7 @@ public class BookingConfirmationSaga {
     private final SagaExecutionRepository sagaRepository;
 
     /**
-     * Creates a new {@code BookingConfirmationSaga} with all required dependencies.
+     * Creates a new {@code BookingConfirmationSagaHandler} with all required dependencies.
      *
      * @param bookingService the booking application service for confirm/cancel operations
      * @param vesselCapacityPort outbound port for vessel capacity reservation/release
@@ -75,7 +75,7 @@ public class BookingConfirmationSaga {
      * @param notificationPort outbound port for notification operations
      * @param sagaRepository the repository for persisting saga execution state
      */
-    public BookingConfirmationSaga(
+    public BookingConfirmationSagaHandler(
             BookingService bookingService,
             VesselCapacityPort vesselCapacityPort,
             BillingPort billingPort,
@@ -124,7 +124,7 @@ public class BookingConfirmationSaga {
             saga = executeConfirmBooking(saga, bookingId, voyageId);
         } catch (Exception e) {
             log.warn("Saga step CONFIRM_BOOKING failed: sagaId={}, bookingId={}, error={}",
-                    saga.getSagaId(), bookingId, e.getMessage());
+                    saga.getSagaId(), bookingId, e.getMessage(), e);
             return markFailed(saga, SagaStep.CONFIRM_BOOKING, e.getMessage());
         }
 
@@ -133,7 +133,7 @@ public class BookingConfirmationSaga {
             saga = executeReserveCapacity(saga, voyageId, bookingId);
         } catch (Exception e) {
             log.warn("Saga step RESERVE_CAPACITY failed: sagaId={}, voyageId={}, error={}",
-                    saga.getSagaId(), voyageId, e.getMessage());
+                    saga.getSagaId(), voyageId, e.getMessage(), e);
             return failWithCompensation(saga, SagaStep.RESERVE_CAPACITY, e.getMessage(), bookingId, voyageId);
         }
 
@@ -142,7 +142,7 @@ public class BookingConfirmationSaga {
             saga = executeGenerateInvoice(saga, bookingId, idempotencyKey);
         } catch (Exception e) {
             log.warn("Saga step GENERATE_INVOICE failed: sagaId={}, bookingId={}, error={}",
-                    saga.getSagaId(), bookingId, e.getMessage());
+                    saga.getSagaId(), bookingId, e.getMessage(), e);
             return failWithCompensation(saga, SagaStep.GENERATE_INVOICE, e.getMessage(), bookingId, voyageId);
         }
 
@@ -151,7 +151,7 @@ public class BookingConfirmationSaga {
             saga = executeSendNotification(saga, bookingId, idempotencyKey);
         } catch (Exception e) {
             log.warn("Saga step SEND_NOTIFICATION failed (fire-and-forget, continuing): sagaId={}, bookingId={}, error={}",
-                    saga.getSagaId(), bookingId, e.getMessage());
+                    saga.getSagaId(), bookingId, e.getMessage(), e);
             // Fire-and-forget — no compensation, no failure. Saga still completes.
         }
 

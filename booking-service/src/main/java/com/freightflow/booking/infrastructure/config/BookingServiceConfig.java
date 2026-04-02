@@ -1,5 +1,6 @@
 package com.freightflow.booking.infrastructure.config;
 
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
  *   <li>Object mapper customizations</li>
  *   <li>Resilience4j circuit breaker beans</li>
  *   <li>Custom converters and serializers</li>
+ *   <li>Caching configuration</li>
  * </ul>
  *
  * <p>Currently, all beans are discovered via component scanning. This class
@@ -21,6 +23,7 @@ import org.springframework.context.annotation.Configuration;
  * @see com.freightflow.booking.BookingServiceApplication
  */
 @Configuration
+@EnableCaching
 public class BookingServiceConfig {
 
     // Bean definitions will be added here as the service evolves.

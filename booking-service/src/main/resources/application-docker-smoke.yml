@@ -1,0 +1,108 @@
+# =============================================================================
+# FreightFlow Booking Service — Docker Smoke Test Profile
+# =============================================================================
+# Minimal profile for verifying the Docker image starts successfully in CI.
+# Disables external dependencies: PostgreSQL, Kafka, Keycloak, Eureka, Config Server.
+# Activate with: --spring.profiles.active=docker-smoke
+# =============================================================================
+
+spring:
+  # ---------------------------------------------------------------------------
+  # Config Server — disabled for smoke test
+  # ---------------------------------------------------------------------------
+  config:
+    import: "optional:"
+
+  # ---------------------------------------------------------------------------
+  # Data Source — disabled for smoke test (no database needed)
+  # ---------------------------------------------------------------------------
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dummy
+    username: dummy
+    password: dummy
+  
+  # ---------------------------------------------------------------------------
+  # JPA/Hibernate — disable for smoke test
+  # ---------------------------------------------------------------------------
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: false
+
+  # ---------------------------------------------------------------------------
+  # Flyway — disabled for smoke test
+  # ---------------------------------------------------------------------------
+  flyway:
+    enabled: false
+
+  # ---------------------------------------------------------------------------
+  # Kafka — disabled for smoke test
+  # ---------------------------------------------------------------------------
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+
+  # ---------------------------------------------------------------------------
+  # Autoconfiguration exclusions — disable components that require external services
+  # ---------------------------------------------------------------------------
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration
+      - org.springframework.cloud.config.client.ConfigClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+# =============================================================================
+# Eureka — disabled for smoke test
+# =============================================================================
+eureka:
+  client:
+    enabled: false
+
+# =============================================================================
+# Custom FreightFlow Properties — disable features requiring external services
+# =============================================================================
+freightflow:
+  security:
+    enabled: false
+  tracing:
+    enabled: false
+  saga:
+    recovery:
+      enabled: false
+
+# =============================================================================
+# Management / Actuator — keep health endpoint for smoke test verification
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  health:
+    # Disable health indicators that require external services
+    db:
+      enabled: false
+    diskspace:
+      enabled: true
+  otlp:
+    tracing:
+      endpoint: ""
+
+# =============================================================================
+# Logging — minimal output for faster startup
+# =============================================================================
+logging:
+  level:
+    root: WARN
+    com.freightflow: INFO
+    org.springframework.boot: INFO
+

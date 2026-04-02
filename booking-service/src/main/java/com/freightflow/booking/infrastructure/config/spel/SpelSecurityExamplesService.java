@@ -35,9 +35,9 @@ import java.util.List;
  * @see org.springframework.security.access.prepost.PreAuthorize
  */
 @Service
-public class SpelSecurityExamples {
+public class SpelSecurityExamplesService {
 
-    private static final Logger log = LoggerFactory.getLogger(SpelSecurityExamples.class);
+    private static final Logger log = LoggerFactory.getLogger(SpelSecurityExamplesService.class);
 
     /**
      * SpEL in @PreAuthorize — role-based access control.

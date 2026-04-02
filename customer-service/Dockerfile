@@ -26,7 +26,15 @@ COPY freightflow-commons/commons-security/pom.xml freightflow-commons/commons-se
 COPY freightflow-commons/commons-observability/pom.xml freightflow-commons/commons-observability/
 COPY freightflow-commons/commons-exception/pom.xml freightflow-commons/commons-exception/
 COPY freightflow-commons/commons-testing/pom.xml freightflow-commons/commons-testing/
+COPY discovery-server/pom.xml discovery-server/
+COPY config-server/pom.xml config-server/
+COPY api-gateway/pom.xml api-gateway/
+COPY booking-service/pom.xml booking-service/
+COPY tracking-service/pom.xml tracking-service/
+COPY billing-service/pom.xml billing-service/
+COPY vessel-schedule-service/pom.xml vessel-schedule-service/
 COPY customer-service/pom.xml customer-service/
+COPY notification-service/pom.xml notification-service/
 
 # Download dependencies (cached unless POM changes)
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -B -ntp -pl customer-service -am

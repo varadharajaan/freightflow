@@ -7,6 +7,7 @@ import com.freightflow.booking.application.saga.SagaStep;
 import com.freightflow.commons.observability.profiling.Profiled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
  * @see SagaExecutionJpaEntity
  */
 @Component
+@Profile("!docker-smoke")
 public class JpaSagaExecutionAdapter implements SagaExecutionRepository {
 
     private static final Logger log = LoggerFactory.getLogger(JpaSagaExecutionAdapter.class);

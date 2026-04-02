@@ -6,6 +6,7 @@ import com.freightflow.notificationservice.domain.model.NotificationChannel;
 import com.freightflow.notificationservice.domain.model.NotificationChannel.EmailChannel;
 import com.freightflow.notificationservice.domain.model.NotificationChannel.SmsChannel;
 import com.freightflow.notificationservice.domain.model.NotificationChannel.WebhookChannel;
+import com.freightflow.notificationservice.domain.model.NotificationSendException;
 import com.freightflow.notificationservice.domain.port.NotificationRepository;
 import com.freightflow.notificationservice.domain.port.NotificationSender;
 import org.slf4j.Logger;
@@ -145,9 +146,9 @@ public class NotificationCommandHandler {
             log.info("Notification sent successfully: notificationId={}, channel={}, attempts={}",
                     notification.getNotificationId(), channelType, notification.getAttempts());
 
-        } catch (NotificationSender.NotificationSendException ex) {
+        } catch (NotificationSendException ex) {
             log.warn("Notification delivery failed: notificationId={}, channel={}, error={}",
-                    notification.getNotificationId(), channelType, ex.getMessage());
+                    notification.getNotificationId(), channelType, ex.getMessage(), ex);
 
             notification.markRetryOrFail(ex.getMessage());
 

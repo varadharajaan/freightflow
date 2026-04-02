@@ -2,6 +2,7 @@ package com.freightflow.booking.infrastructure.adapter.in.rest.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.freightflow.booking.application.BookingService;
+import com.freightflow.booking.application.saga.BookingConfirmationSagaHandler;
 import com.freightflow.booking.domain.model.Booking;
 import com.freightflow.booking.domain.model.BookingStatus;
 import com.freightflow.booking.domain.model.Cargo;
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.bean.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -29,10 +30,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -68,16 +69,57 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * @see BookingController
  */
-@WebMvcTest(BookingController.class)
-@Import(com.freightflow.booking.infrastructure.config.security.BookingSecurityConfig.class)
+@WebMvcTest(
+        controllers = BookingController.class,
+        excludeAutoConfiguration = {
+                org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration.class
+        }
+)
+@org.springframework.test.context.ContextConfiguration(classes = {
+        BookingController.class,
+        BookingSecurityTest.TestSecurityConfig.class,
+        com.freightflow.booking.infrastructure.config.security.BookingSecurityConfig.class
+})
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 @DisplayName("BookingController Security Tests")
 class BookingSecurityTest {
 
+    /**
+     * Test-specific security configuration that enables method security and provides
+     * a security filter chain for the test context.
+     *
+     * <p>{@code @WebMvcTest} does not auto-configure security from external modules,
+     * so we explicitly enable {@code @PreAuthorize} annotations and provide a basic
+     * security filter chain for the controller slice tests.</p>
+     */
+    @org.springframework.context.annotation.Configuration
+    @org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity(prePostEnabled = true)
+    static class TestSecurityConfig {
+
+        @org.springframework.context.annotation.Bean
+        public org.springframework.security.web.SecurityFilterChain securityFilterChain(
+                org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
+            http
+                    .csrf(csrf -> csrf.disable())
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/actuator/**").permitAll()
+                            .anyRequest().authenticated()
+                    )
+                    .exceptionHandling(ex -> ex
+                            .authenticationEntryPoint((request, response, authException) -> {
+                                response.setStatus(org.springframework.http.HttpStatus.UNAUTHORIZED.value());
+                            })
+                    );
+            return http.build();
+        }
+    }
+
     private static final String BOOKINGS_URL = "/api/v1/bookings";
-    private static final String BOOKING_ID = UUID.randomUUID().toString();
-    private static final String CUSTOMER_ID = UUID.randomUUID().toString();
-    private static final String OTHER_CUSTOMER_ID = UUID.randomUUID().toString();
-    private static final String VOYAGE_ID = UUID.randomUUID().toString();
+    // Using fixed UUIDs for compile-time constant requirement in @WithMockUser annotation
+    private static final String BOOKING_ID = "b1a2c3d4-e5f6-7890-abcd-ef1234567890";
+    private static final String CUSTOMER_ID = "c1a2b3c4-d5e6-f789-0abc-def123456789";
+    private static final String OTHER_CUSTOMER_ID = "d1e2f3a4-b5c6-7890-1234-abcdef123456";
+    private static final String VOYAGE_ID = "a1b2c3d4-e5f6-7890-abcd-123456789abc";
 
     @Autowired
     private MockMvc mockMvc;
@@ -87,6 +129,9 @@ class BookingSecurityTest {
 
     @MockBean
     private BookingService bookingService;
+
+    @MockBean
+    private BookingConfirmationSagaHandler bookingConfirmationSagaHandler;
 
     // ==================== Authentication Tests ====================
 
@@ -106,6 +151,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for POST /api/v1/bookings")
         void should_Return401_When_NoTokenOnCreate() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"customerId\":\"test\"}"))
                     .andExpect(status().isUnauthorized());
@@ -115,6 +161,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for POST /api/v1/bookings/{id}/confirm")
         void should_Return401_When_NoTokenOnConfirm() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"voyageId\":\"" + VOYAGE_ID + "\"}"))
                     .andExpect(status().isUnauthorized());
@@ -124,6 +171,7 @@ class BookingSecurityTest {
         @DisplayName("should return 401 when no token is provided for DELETE /api/v1/bookings/{id}")
         void should_Return401_When_NoTokenOnCancel() throws Exception {
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"test cancellation\"}"))
                     .andExpect(status().isUnauthorized());
@@ -158,6 +206,7 @@ class BookingSecurityTest {
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -195,6 +244,7 @@ class BookingSecurityTest {
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -227,6 +277,7 @@ class BookingSecurityTest {
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());
@@ -277,6 +328,7 @@ class BookingSecurityTest {
                     .willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"Changed plans\"}"))
                     .andExpect(status().isOk());
@@ -300,6 +352,7 @@ class BookingSecurityTest {
             given(bookingService.getBooking(BOOKING_ID)).willReturn(stubBooking(BOOKING_ID, CUSTOMER_ID));
 
             mockMvc.perform(delete(BOOKINGS_URL + "/{bookingId}", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"Changed plans\"}"))
                     .andExpect(status().isForbidden());
@@ -322,6 +375,7 @@ class BookingSecurityTest {
             );
 
             mockMvc.perform(post(BOOKINGS_URL)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());
@@ -339,6 +393,7 @@ class BookingSecurityTest {
         @DisplayName("should return 403 when finance role tries to create a booking")
         void should_Return403_When_FinanceTriesToCreate() throws Exception {
             mockMvc.perform(post(BOOKINGS_URL)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"customerId\":\"test\",\"origin\":\"CNSHA\",\"destination\":\"USLAX\"," +
                                     "\"commodityCode\":\"8471\",\"description\":\"Electronics\"," +
@@ -354,6 +409,7 @@ class BookingSecurityTest {
             ConfirmBookingRequest request = new ConfirmBookingRequest(VOYAGE_ID);
 
             mockMvc.perform(post(BOOKINGS_URL + "/{bookingId}/confirm", BOOKING_ID)
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());

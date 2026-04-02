@@ -48,7 +48,7 @@ class BookingRepositoryIntegrationTest {
         BookingJpaEntity entity = BookingJpaEntity.createForMapping();
         entity.setId(UUID.randomUUID());
         entity.setCustomerId(UUID.randomUUID());
-        entity.setStatus("DRAFT");
+        entity.setStatus(com.freightflow.booking.domain.model.BookingStatus.DRAFT);
         entity.setCommodityCode("GEN");
         entity.setDescription("General Cargo");
         entity.setWeightValue(BigDecimal.valueOf(1500));

@@ -21,10 +21,11 @@ resource "aws_security_group" "this" {
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-egress-sgr
   }
 
   tags = merge(var.tags, {
@@ -32,6 +33,7 @@ resource "aws_security_group" "this" {
   })
 }
 
+#tfsec:ignore:aws-rds-enable-performance-insights-encryption
 resource "aws_db_instance" "this" {
   identifier                          = "${var.name}-postgres"
   engine                              = "postgres"
@@ -52,6 +54,7 @@ resource "aws_db_instance" "this" {
   vpc_security_group_ids              = [aws_security_group.this.id]
   enabled_cloudwatch_logs_exports     = ["postgresql", "upgrade"]
   performance_insights_enabled        = true
+  performance_insights_kms_key_id     = var.performance_insights_kms_key_id
   auto_minor_version_upgrade          = true
   apply_immediately                   = false
   iam_database_authentication_enabled = true

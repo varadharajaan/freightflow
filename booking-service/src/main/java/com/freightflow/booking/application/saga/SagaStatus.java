@@ -21,7 +21,7 @@ package com.freightflow.booking.application.saga;
  * has finished execution — no further transitions are permitted.</p>
  *
  * @see SagaExecution
- * @see BookingConfirmationSaga
+ * @see BookingConfirmationSagaHandler
  */
 public enum SagaStatus {
 

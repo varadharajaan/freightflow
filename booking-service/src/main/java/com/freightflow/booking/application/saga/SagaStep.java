@@ -18,7 +18,7 @@ import java.util.List;
  * </pre>
  *
  * @see SagaExecution
- * @see BookingConfirmationSaga
+ * @see BookingConfirmationSagaHandler
  */
 public enum SagaStep {
 

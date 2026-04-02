@@ -72,6 +72,12 @@ variable "deletion_protection" {
   default     = true
 }
 
+variable "performance_insights_kms_key_id" {
+  description = "ARN of KMS key for Performance Insights encryption. If null, AWS managed key is used."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common tags applied to resources."
   type        = map(string)

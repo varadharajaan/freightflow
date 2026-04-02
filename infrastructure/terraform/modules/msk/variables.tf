@@ -43,6 +43,18 @@ variable "ebs_volume_size" {
   default     = 200
 }
 
+variable "kms_key_arn" {
+  description = "ARN of KMS key for MSK at-rest encryption (encryption_at_rest_kms_key_arn). If null, AWS-managed key is used."
+  type        = string
+  default     = null
+}
+
+variable "cloudwatch_log_group" {
+  description = "CloudWatch log group name for MSK broker logs. If null, CloudWatch logging is disabled."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common tags applied to resources."
   type        = map(string)
