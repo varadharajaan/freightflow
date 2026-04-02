@@ -35,7 +35,7 @@ spec:
       serviceAccountName: api-gateway
       containers:
         - name: api-gateway
-          image: ghcr.io/varadharajaan/freightflow/api-gateway:latest
+          image: ghcr.io/varadharajaan/freightflow/api-gateway:bbd4f2fc4dba79dec6b8059ae9ba5b51608c508d
           ports:
             - containerPort: 8080
               name: http

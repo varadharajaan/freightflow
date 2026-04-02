@@ -34,7 +34,7 @@ spec:
       serviceAccountName: notification-service
       containers:
         - name: notification-service
-          image: ghcr.io/varadharajaan/freightflow/notification-service:latest
+          image: ghcr.io/varadharajaan/freightflow/notification-service:bbd4f2fc4dba79dec6b8059ae9ba5b51608c508d
           ports:
             - containerPort: 8086
               name: http

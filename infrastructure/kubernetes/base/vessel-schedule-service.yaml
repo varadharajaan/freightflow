@@ -34,7 +34,7 @@ spec:
       serviceAccountName: vessel-schedule-service
       containers:
         - name: vessel-schedule-service
-          image: ghcr.io/varadharajaan/freightflow/vessel-schedule-service:latest
+          image: ghcr.io/varadharajaan/freightflow/vessel-schedule-service:bbd4f2fc4dba79dec6b8059ae9ba5b51608c508d
           ports:
             - containerPort: 8084
               name: http

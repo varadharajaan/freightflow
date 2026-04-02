@@ -35,7 +35,7 @@ spec:
       serviceAccountName: config-server
       containers:
         - name: config-server
-          image: ghcr.io/varadharajaan/freightflow/config-server:latest
+          image: ghcr.io/varadharajaan/freightflow/config-server:bbd4f2fc4dba79dec6b8059ae9ba5b51608c508d
           ports:
             - containerPort: 8888
               name: http

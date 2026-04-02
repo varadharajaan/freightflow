@@ -34,7 +34,7 @@ spec:
       serviceAccountName: booking-service
       containers:
         - name: booking-service
-          image: ghcr.io/varadharajaan/freightflow/booking-service:latest
+          image: ghcr.io/varadharajaan/freightflow/booking-service:bbd4f2fc4dba79dec6b8059ae9ba5b51608c508d
           ports:
             - containerPort: 8081
               name: http
